@@ -1,0 +1,44 @@
+---
+
+
+exp:  baseline
+seed: 42
+
+loader:
+  train_batch: 16
+  val_batch:   16
+  num_workers: 20
+  pin_memory:  True
+
+model:
+  name: UNet
+  params:
+    encoder_name:           resnet34
+    encoder_depth:          5
+    encoder_weights:        null
+    decoder_use_batchnorm:  True
+    decoder_channels:       [256, 128, 64, 32, 16]
+    decoder_attention_type: null
+    in_channels:            3
+    classes:                3
+    activation:             null
+
+optimizer:
+  name: Adam
+  params:
+    lr:           0.001
+    betas:        [0.9, 0.99]
+    weight_decay: 0.05
+
+scheduler:
+  min_lr: 0.0
+  warmup: 10
+
+trainer:
+  epochs:     100
+  accum_iter: 4
+  ckpt_freq:  10
+  print_freq: 100
+
+
+...

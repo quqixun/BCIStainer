@@ -1,0 +1,8 @@
+numpy
+scipy
+imageio
+omegaconf
+matplotlib
+tqdm
+albumentations
+segmentation-models-pytorch
