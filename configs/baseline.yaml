@@ -5,8 +5,9 @@ exp:  baseline
 seed: 42
 
 loader:
-  train_batch: 16
-  val_batch:   16
+  norm_method: global_minmax
+  train_batch: 4
+  val_batch:   4
   num_workers: 20
   pin_memory:  True
 
@@ -21,10 +22,16 @@ model:
     decoder_attention_type: null
     in_channels:            3
     classes:                3
-    activation:             null
+    activation:             sigmoid
+
+# loss:
+#   l1:
+#     weight: 1.0
+#   lpips:
+#     weight: 1.0
 
 optimizer:
-  name: Adam
+  name: AdamW
   params:
     lr:           0.001
     betas:        [0.9, 0.99]
@@ -36,7 +43,7 @@ scheduler:
 
 trainer:
   epochs:     100
-  accum_iter: 4
+  accum_iter: 8
   ckpt_freq:  10
   print_freq: 100
 

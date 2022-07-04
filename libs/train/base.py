@@ -1,8 +1,10 @@
 import os
 import json
 import math
+import lpips
 import torch
 import torch.nn as nn
+import segmentation_models_pytorch as smp
 
 from torch.cuda.amp import GradScaler
 
@@ -18,23 +20,48 @@ class BCIBaseTrainer(object):
         self.log_path = os.path.join(self.exp_dir, 'log.txt')
         self.resume_ckpt = resume_ckpt
 
+        # model
+        self.model_name = configs.model.name
+        self.model_prms = configs.model.params
+        self.device     = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        # optimizer
+        self.opt_name = configs.optimizer.name
+        self.opt_prms = configs.optimizer.params
+
+        # scheduler
+        self.min_lr = configs.scheduler.min_lr
+        self.warmup = configs.scheduler.warmup
+
+        # trainer
         self.start_epoch = 0
         self.epochs      = configs.trainer.epochs
         self.ckpt_freq   = configs.trainer.ckpt_freq
         self.print_freq  = configs.trainer.print_freq
         self.accum_iter  = configs.trainer.accum_iter
 
-        self.opt_name = configs.optimizer.name
-        self.opt_prms = configs.optimizer.params
-        self.min_lr   = configs.scheduler.min_lr
-        self.warmup   = configs.scheduler.warmup
+        self._load_model()
+        self._load_losses()
+        self._load_optimizer()
+        self._load_checkpoint()
 
     def _load_model(self):
-        raise NotImplementedError('load_model was not implemented')
+
+        if self.model_name == 'UNet':
+            model_func = smp.Unet
+        else:
+            raise ValueError('Unknown model')
+
+        self.model = model_func(**self.model_prms)
+        self.model = self.model.to(self.device)
+
+        return
 
     def _load_losses(self):
 
-        self.mse_loss = nn.MSELoss()
+        self.mse_loss   = nn.MSELoss()
+        self.mae_loss   = nn.L1Loss()
+        self.lpips_loss = lpips.LPIPS(net='vgg').to(self.device)
 
         return
 
@@ -42,6 +69,8 @@ class BCIBaseTrainer(object):
 
         if self.opt_name == 'Adam':
             opt_func = torch.optim.Adam
+        elif self.opt_name == 'AdamW':
+            opt_func = torch.optim.AdamW
         else:
             raise ValueError('Unknown optimizer')
 

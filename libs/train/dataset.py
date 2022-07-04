@@ -1,18 +1,18 @@
 import os
-import imageio
 import numpy as np
+import imageio.v2 as iio
 import albumentations as A
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from os.path import join as opj
-from ..utils import HE_STAT, IHC_STAT
+from ..utils import normalize_image
 from torch.utils.data import Dataset, DataLoader
 
 
 class BCIDataset(Dataset):
 
-    def __init__(self, data_dir, augment=False):
+    def __init__(self, data_dir, augment=False, norm_method='global_minmax'):
         super(BCIDataset, self).__init__()
 
         he_dir  = opj(data_dir, 'HE')
@@ -25,8 +25,8 @@ class BCIDataset(Dataset):
 
         print(f'Loading data from {data_dir} ...')
         for f in tqdm(files, ncols=66):
-            self.he_list.append(self.load_image(opj(he_dir, f)))
-            self.ihc_list.append(self.load_image(opj(ihc_dir, f)))
+            self.he_list.append(iio.imread(opj(he_dir, f)))
+            self.ihc_list.append(iio.imread(opj(ihc_dir, f)))
             self.level_list.append(int(f.split('_')[2][0]))
 
         self.augment = augment
@@ -44,12 +44,9 @@ class BCIDataset(Dataset):
                 additional_targets={'image0': 'image'}
             )
 
-        return
+        self.norm_method = norm_method
 
-    @staticmethod
-    def load_image(image_path):
-        image = imageio.v2.imread(image_path)
-        return np.array(image)
+        return
 
     def __len__(self):
         return len(self.he_list)
@@ -77,9 +74,9 @@ class BCIDataset(Dataset):
         # plt.tight_layout()
         # plt.show()
 
-        he  = (he - HE_STAT['mean']) / HE_STAT['std']
+        he  = normalize_image(he, 'he', self.norm_method)
         he  = he.transpose(2, 0, 1).astype(np.float32)
-        ihc = (ihc - IHC_STAT['mean']) / IHC_STAT['std']
+        ihc = normalize_image(ihc, 'ihc', self.norm_method)
         ihc = ihc.transpose(2, 0, 1).astype(np.float32)
 
         return he, ihc, level
@@ -99,7 +96,9 @@ def get_dataloader(mode, data_dir, configs):
         shuffle    = False
         augment    = False
 
-    dataset = BCIDataset(data_dir, augment)
+    dataset = BCIDataset(
+        data_dir, augment, configs.norm_method
+    )
 
     dataloader = DataLoader(
         dataset,

@@ -6,3 +6,7 @@ matplotlib
 tqdm
 albumentations
 segmentation-models-pytorch
+scikit-image
+opencv-python
+pandas
+lpips

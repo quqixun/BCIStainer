@@ -23,7 +23,7 @@ def main(args):
     trainer = BCITrainer(configs, exp_dir, args.resume_ckpt)
 
     # training model
-    trainer.train_and_val(train_loader, val_loader)
+    trainer.forward(train_loader, val_loader)
 
     return
 
@@ -38,5 +38,5 @@ if __name__ == '__main__':
     parser.add_argument('--resume_ckpt', type=str, help='checkpoint path for resuming')
     args = parser.parse_args()
 
-    check_args(args)
+    check_train_args(args)
     main(args)

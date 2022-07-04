@@ -24,6 +24,13 @@ def get_mean_std(data_dir):
     print(data_dir)
     print('mean:', np.mean(data_array, axis=(0, 1, 2)))
     print('std: ', np.std(data_array, axis=(0, 1, 2)))
+    print('min: ', np.min(data_array, axis=(0, 1, 2)))
+    print('max: ', np.max(data_array, axis=(0, 1, 2)))
+    print('global_mean:', np.mean(data_array))
+    print('global_std: ', np.std(data_array))
+    print('global_min: ', np.min(data_array))
+    print('global_max: ', np.max(data_array))
+    print()
 
 
 if __name__ == '__main__':

@@ -3,7 +3,6 @@ import torch
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-import segmentation_models_pytorch as smp
 
 from .logger import *
 from .base import BCIBaseTrainer
@@ -15,28 +14,7 @@ class BCITrainer(BCIBaseTrainer):
     def __init__(self, configs, exp_dir, resume_ckpt):
         super(BCITrainer, self).__init__(configs, exp_dir, resume_ckpt)
 
-        self.model_name  = configs.model.name
-        self.model_prms  = configs.model.params
-        self.device      = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        self._load_model()
-        self._load_losses()
-        self._load_optimizer()
-        self._load_checkpoint()
-
-    def _load_model(self):
-
-        if self.model_name == 'UNet':
-            model_func = smp.Unet
-        else:
-            raise ValueError('Unknown model')
-
-        self.model = model_func(**self.model_prms)
-        self.model = self.model.to(self.device)
-
-        return
-
-    def train_and_val(self, train_loader, val_loader):
+    def forward(self, train_loader, val_loader):
 
         best_val_eval = np.inf
         start_time = time.time()
@@ -84,11 +62,15 @@ class BCITrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
 
             with autocast():
-                pred_ihc = self.model(he)
-                loss = self.mse_loss(ihc, pred_ihc)
+                ihc_pred = self.model(he)
+                rec_loss = self.mae_loss(ihc, ihc_pred)
+                pcp_loss = self.lpips_loss(ihc * 2 - 1, ihc_pred * 2 - 1)[:3].mean()
+                loss = rec_loss + pcp_loss
 
             logger.update(
                 loss=loss.item(),
+                rec_loss=rec_loss.item(),
+                pcp_loss=pcp_loss.item(),
                 lr=self.optimizer.param_groups[0]['lr']
             )
 
@@ -111,8 +93,10 @@ class BCITrainer(BCIBaseTrainer):
         for _, data in enumerate(data_iter):
             he, ihc, level = [d.to(self.device) for d in data]
 
-            pred_ihc = self.model(he)
-            loss = self.mse_loss(ihc, pred_ihc)
-            logger.update(loss=loss)
+            ihc_pred = self.model(he)
+            rec_loss = self.mae_loss(ihc, ihc_pred).item()
+            pcp_loss = self.lpips_loss(ihc * 2 - 1, ihc_pred * 2 - 1)[:3].mean().item()
+            loss = rec_loss + pcp_loss
+            logger.update(loss=loss, rec_loss=rec_loss, pcp_loss=pcp_loss)
 
         return {k: meter.global_avg for k, meter in logger.meters.items()}
