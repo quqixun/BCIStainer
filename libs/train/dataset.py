@@ -36,10 +36,10 @@ class BCIDataset(Dataset):
                     A.Flip(p=0.5),
                     A.Transpose(p=0.5),
                     A.RandomRotate90(p=0.5),
-                    A.RandomResizedCrop(
-                        p=0.3, height=1024, width=1024,
-                        scale=(0.5, 1.0), interpolation=4
-                    )
+                    # A.RandomResizedCrop(
+                    #     p=0.3, height=1024, width=1024,
+                    #     scale=(0.5, 1.0), interpolation=4
+                    # )
                 ],
                 additional_targets={'image0': 'image'}
             )
@@ -53,8 +53,8 @@ class BCIDataset(Dataset):
 
     def __getitem__(self, index):
 
-        he    = self.he_list[index]
-        ihc   = self.ihc_list[index]
+        he    = np.array(self.he_list[index])
+        ihc   = np.array(self.ihc_list[index])
         level = self.level_list[index]
 
         if self.augment:

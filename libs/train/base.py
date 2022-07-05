@@ -61,7 +61,7 @@ class BCIBaseTrainer(object):
 
         self.mse_loss   = nn.MSELoss()
         self.mae_loss   = nn.L1Loss()
-        self.lpips_loss = lpips.LPIPS(net='vgg').to(self.device)
+        self.lpips_loss = lpips.LPIPS(net='alex').to(self.device)
 
         return
 

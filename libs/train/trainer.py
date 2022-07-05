@@ -64,7 +64,7 @@ class BCITrainer(BCIBaseTrainer):
             with autocast():
                 ihc_pred = self.model(he)
                 rec_loss = self.mae_loss(ihc, ihc_pred)
-                pcp_loss = self.lpips_loss(ihc * 2 - 1, ihc_pred * 2 - 1)[:3].mean()
+                pcp_loss = self.lpips_loss(ihc, ihc_pred).mean()
                 loss = rec_loss + pcp_loss
 
             logger.update(
@@ -95,7 +95,7 @@ class BCITrainer(BCIBaseTrainer):
 
             ihc_pred = self.model(he)
             rec_loss = self.mae_loss(ihc, ihc_pred).item()
-            pcp_loss = self.lpips_loss(ihc * 2 - 1, ihc_pred * 2 - 1)[:3].mean().item()
+            pcp_loss = self.lpips_loss(ihc, ihc_pred).mean().item()
             loss = rec_loss + pcp_loss
             logger.update(loss=loss, rec_loss=rec_loss, pcp_loss=pcp_loss)
 

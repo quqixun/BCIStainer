@@ -5,9 +5,9 @@ exp:  baseline
 seed: 42
 
 loader:
-  norm_method: global_minmax
-  train_batch: 4
-  val_batch:   4
+  norm_method: channel_zscore
+  train_batch: 32
+  val_batch:   8
   num_workers: 20
   pin_memory:  True
 
@@ -17,12 +17,12 @@ model:
     encoder_name:           resnet34
     encoder_depth:          5
     encoder_weights:        null
-    decoder_use_batchnorm:  True
+    decoder_use_batchnorm:  False
     decoder_channels:       [256, 128, 64, 32, 16]
     decoder_attention_type: null
     in_channels:            3
     classes:                3
-    activation:             sigmoid
+    activation:             tanh
 
 # loss:
 #   l1:
@@ -31,20 +31,20 @@ model:
 #     weight: 1.0
 
 optimizer:
-  name: AdamW
+  name: Adam
   params:
     lr:           0.001
     betas:        [0.9, 0.99]
-    weight_decay: 0.05
+    weight_decay: 0.0
 
 scheduler:
-  min_lr: 0.0
-  warmup: 10
+  min_lr: 0.001
+  warmup: 0
 
 trainer:
   epochs:     100
-  accum_iter: 8
-  ckpt_freq:  10
+  accum_iter: 1
+  ckpt_freq:  20
   print_freq: 100
 
 

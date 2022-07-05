@@ -81,6 +81,7 @@ def normalize_image(image, image_type, norm_method):
     elif norm_method == 'global_minmax':
         global_range =  stat['global_max'] - stat['global_min']
         image_norm = (image - stat['global_min']) / global_range
+        image_norm = image_norm * 2.0 - 1.0
     else:
         raise ValueError('unknown norm_method')
 
@@ -101,8 +102,9 @@ def unnormalize_image(image, image_type, norm_method):
     elif norm_method == 'global_zscore':
         image_unnorm = image * stat['global_std'] + stat['global_mean']
     elif norm_method == 'global_minmax':
-        global_range =  stat['global_max'] - stat['global_min']
-        image_unnorm = image * global_range + stat['global_min']
+        image_unnorm = (image + 1.0) / 2.0
+        global_range = stat['global_max'] - stat['global_min']
+        image_unnorm = image_unnorm * global_range + stat['global_min']
     else:
         raise ValueError('unknown norm_method')
 
