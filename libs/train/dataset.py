@@ -23,10 +23,9 @@ class BCIDataset(Dataset):
         self.ihc_list = []
         self.level_list = []
 
-        print(f'Loading data from {data_dir} ...')
-        for f in tqdm(files, ncols=66):
-            self.he_list.append(iio.imread(opj(he_dir, f)))
-            self.ihc_list.append(iio.imread(opj(ihc_dir, f)))
+        for f in files:
+            self.he_list.append(opj(he_dir, f))
+            self.ihc_list.append(opj(ihc_dir, f))
             self.level_list.append(int(f.split('_')[2][0]))
 
         self.augment = augment
@@ -36,10 +35,10 @@ class BCIDataset(Dataset):
                     A.Flip(p=0.5),
                     A.Transpose(p=0.5),
                     A.RandomRotate90(p=0.5),
-                    # A.RandomResizedCrop(
-                    #     p=0.3, height=1024, width=1024,
-                    #     scale=(0.5, 1.0), interpolation=4
-                    # )
+                    A.RandomResizedCrop(
+                        p=0.3, height=1024, width=1024,
+                        scale=(0.75, 1.0), interpolation=4
+                    )
                 ],
                 additional_targets={'image0': 'image'}
             )
@@ -53,8 +52,8 @@ class BCIDataset(Dataset):
 
     def __getitem__(self, index):
 
-        he    = np.array(self.he_list[index])
-        ihc   = np.array(self.ihc_list[index])
+        he    = np.array(iio.imread(self.he_list[index]))
+        ihc   = np.array(iio.imread(self.ihc_list[index]))
         level = self.level_list[index]
 
         if self.augment:

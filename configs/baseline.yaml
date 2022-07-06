@@ -6,35 +6,48 @@ seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 16
-  val_batch:   8
-  num_workers: 20
+  train_batch: 4
+  val_batch:   4
+  num_workers: 16
   pin_memory:  True
 
-model:
-  name: UNet
+G:
+  name: resnet_nblocks
   params:
-    encoder_name:           resnet50
-    encoder_depth:          5
-    encoder_weights:        null
-    decoder_use_batchnorm:  False
-    decoder_channels:       [256, 128, 64, 32, 16]
-    decoder_attention_type: null
-    in_channels:            3
-    classes:                3
-    activation:             tanh
+    input_nc:    3
+    output_nc:   3
+    n_blocks:    9
+    ngf:         64
+    norm_type:   batch
+    use_dropout: False
+  init:
+    init_type:   normal
+    init_gain:   0.02
 
-# loss:
-#   l1:
-#     weight: 1.0
-#   lpips:
-#     weight: 1.0
+D:
+  name: patch_gan
+  params:
+    input_nc:  6
+    ndf:       64
+    n_layers:  3
+    norm_type: batch
+  init:
+    init_type: normal
+    init_gain: 0.02
+
+loss:
+  rec:
+    mode:   mae
+    weight: 1.0
+  gan:
+    mode:   lsgan
+    weight: 1.0
 
 optimizer:
-  name: AdamW
+  name: Adam
   params:
     lr:           0.001
-    betas:        [0.9, 0.99]
+    betas:        [0.5, 0.999]
     weight_decay: 0.0
 
 scheduler:
@@ -43,7 +56,7 @@ scheduler:
 
 trainer:
   epochs:     100
-  accum_iter: 1
+  accum_iter: 4
   ckpt_freq:  25
   print_freq: 100
 

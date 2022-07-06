@@ -1,12 +1,11 @@
 import os
 import json
 import math
-import lpips
 import torch
 import torch.nn as nn
-import segmentation_models_pytorch as smp
 
-from torch.cuda.amp import GradScaler
+from .losses import GANLoss, RecLoss
+from ..models import define_G, define_D
 
 
 class BCIBaseTrainer(object):
@@ -21,13 +20,17 @@ class BCIBaseTrainer(object):
         self.resume_ckpt = resume_ckpt
 
         # model
-        self.model_name = configs.model.name
-        self.model_prms = configs.model.params
-        self.device     = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.D_params = configs.D
+        self.G_params = configs.G
+        self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        # loss
+        self.rec_params = configs.loss.rec
+        self.gan_params = configs.loss.gan
 
         # optimizer
-        self.opt_name = configs.optimizer.name
-        self.opt_prms = configs.optimizer.params
+        self.opt_name   = configs.optimizer.name
+        self.opt_params = configs.optimizer.params
 
         # scheduler
         self.min_lr = configs.scheduler.min_lr
@@ -47,21 +50,17 @@ class BCIBaseTrainer(object):
 
     def _load_model(self):
 
-        if self.model_name == 'UNet':
-            model_func = smp.Unet
-        else:
-            raise ValueError('Unknown model')
-
-        self.model = model_func(**self.model_prms)
-        self.model = self.model.to(self.device)
+        self.D = define_D(self.D_params)
+        self.D = self.D.to(self.device)
+        self.G = define_G(self.G_params)
+        self.G = self.G.to(self.device)
 
         return
 
     def _load_losses(self):
 
-        self.mse_loss   = nn.MSELoss()
-        self.mae_loss   = nn.L1Loss()
-        self.lpips_loss = lpips.LPIPS(net='alex').to(self.device)
+        self.rec_loss = RecLoss(**self.rec_params)
+        self.gan_loss = GANLoss(**self.gan_params).to(self.device)
 
         return
 
@@ -74,8 +73,8 @@ class BCIBaseTrainer(object):
         else:
             raise ValueError('Unknown optimizer')
 
-        self.optimizer = opt_func(self.model.parameters(), **self.opt_prms)
-        self.scaler = GradScaler()
+        self.D_opt = opt_func(self.D.parameters(), **self.opt_params)
+        self.G_opt = opt_func(self.G.parameters(), **self.opt_params)
 
         return
 
@@ -102,8 +101,10 @@ class BCIBaseTrainer(object):
             print('Resume checkpoint from:', ckpt_path)
             checkpoint = torch.load(ckpt_path, map_location='cpu')
             self.start_epoch = checkpoint['epoch'] + 1
-            self.model.load_state_dict(checkpoint['model'])
-            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.D.load_state_dict(checkpoint['D'])
+            self.G.load_state_dict(checkpoint['G'])
+            self.D_opt.load_state_dict(checkpoint['D_opt'])
+            self.G_opt.load_state_dict(checkpoint['G_opt'])
         except Exception as e:
             print('Faild to resume checkpoint')
 
@@ -116,18 +117,20 @@ class BCIBaseTrainer(object):
 
         ckpt = {
             'epoch': epoch,
-            'model': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
+            'D':     self.D.state_dict(),
+            'G':     self.G.state_dict(),
+            'D_opt': self.D_opt.state_dict(),
+            'G_opt': self.G_opt.state_dict(),
         }
 
         torch.save(ckpt, ckpt_path)
 
         return
 
-    def _save_model(self):
+    def _save_model(self, model_name):
 
-        model_path = os.path.join(self.exp_dir, 'model.pth')
-        torch.save(self.model.state_dict(), model_path)
+        model_path = os.path.join(self.exp_dir, f'model_{model_name}.pth')
+        torch.save(self.G.state_dict(), model_path)
 
         return
 
@@ -146,18 +149,28 @@ class BCIBaseTrainer(object):
     def _adjust_learning_rate(self, epoch):
 
         if epoch < self.warmup:
-            lr = self.opt_prms.lr * epoch / self.warmup 
+            lr = self.opt_params.lr * epoch / self.warmup 
         else:
             after_warmup = self.epochs - self.warmup
             epoch_ratio = (epoch - self.warmup) / after_warmup
             lr = self.min_lr + \
-                (self.opt_prms.lr - self.min_lr) * 0.5 * \
+                (self.opt_params.lr - self.min_lr) * 0.5 * \
                 (1.0 + math.cos(math.pi * epoch_ratio))
 
-        for param_group in self.optimizer.param_groups:
-            if 'lr_scale' in param_group:
-                param_group['lr'] = lr * param_group['lr_scale']
-            else:
-                param_group['lr'] = lr
+        for optimizer in [self.G_opt, self.D_opt]:
+            for param_group in optimizer.param_groups:
+                if 'lr_scale' in param_group:
+                    param_group['lr'] = lr * param_group['lr_scale']
+                else:
+                    param_group['lr'] = lr
 
         return
+
+    def _set_requires_grad(self, nets, requires_grad=False):
+
+        if not isinstance(nets, list):
+            nets = [nets]
+        for net in nets:
+            if net is not None:
+                for param in net.parameters():
+                    param.requires_grad = requires_grad
