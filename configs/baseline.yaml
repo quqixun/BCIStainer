@@ -8,7 +8,7 @@ loader:
   norm_method: global_minmax
   train_batch: 4
   val_batch:   4
-  num_workers: 16
+  num_workers: 20
   pin_memory:  True
 
 G:
@@ -37,8 +37,11 @@ D:
 
 loss:
   rec:
-    mode:   mae
-    weight: 1.0
+    mode:   mse
+    weight: 10.0
+  sim:
+    mode:   ssim
+    weight: 10.0
   gan:
     mode:   lsgan
     weight: 1.0
@@ -46,17 +49,22 @@ loss:
 optimizer:
   name: Adam
   params:
-    lr:           0.001
+    lr:           0.0003
     betas:        [0.5, 0.999]
     weight_decay: 0.0
+  # name: SGD
+  # params:
+  #   lr:           0.0003
+  #   momentum:     0.9
+  #   weight_decay: 0.0
 
 scheduler:
   min_lr: 0.00001
-  warmup: 10
+  warmup: 0
 
 trainer:
   epochs:     100
-  accum_iter: 4
+  accum_iter: 8
   ckpt_freq:  25
   print_freq: 100
 

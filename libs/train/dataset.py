@@ -4,7 +4,6 @@ import imageio.v2 as iio
 import albumentations as A
 import matplotlib.pyplot as plt
 
-from tqdm import tqdm
 from os.path import join as opj
 from ..utils import normalize_image
 from torch.utils.data import Dataset, DataLoader
@@ -35,10 +34,15 @@ class BCIDataset(Dataset):
                     A.Flip(p=0.5),
                     A.Transpose(p=0.5),
                     A.RandomRotate90(p=0.5),
-                    A.RandomResizedCrop(
-                        p=0.3, height=1024, width=1024,
-                        scale=(0.75, 1.0), interpolation=4
-                    )
+                    # A.RandomResizedCrop(
+                    #     p=0.3, height=1024, width=1024,
+                    #     scale=(0.75, 1.0)
+                    # ),
+                    A.OneOf([
+                        A.GridDistortion(p=0.3),
+                        A.ElasticTransform(p=0.3),
+                        A.OpticalDistortion(p=0.3)
+                    ], p=0.3)
                 ],
                 additional_targets={'image0': 'image'}
             )
@@ -61,17 +65,25 @@ class BCIDataset(Dataset):
             he  = transformed['image']
             ihc = transformed['image0']
 
-        # plt.figure(figsize=(18, 10))
-        # plt.subplot(121)
-        # plt.title(f'HE  - {he.shape}')
-        # plt.imshow(he)
-        # plt.axis('off')
-        # plt.subplot(122)
-        # plt.title(f'IHC - {ihc.shape}')
-        # plt.imshow(ihc)
-        # plt.axis('off')
-        # plt.tight_layout()
-        # plt.show()
+            # plt.figure(figsize=(18, 10))
+            # plt.subplot(221)
+            # plt.title(f'HE  - {he.shape}')
+            # plt.imshow(he)
+            # plt.axis('off')
+            # plt.subplot(222)
+            # plt.title(f'IHC - {ihc.shape}')
+            # plt.imshow(ihc)
+            # plt.axis('off')
+            # plt.subplot(223)
+            # plt.title(f'HE A  - {hea.shape}')
+            # plt.imshow(hea)
+            # plt.axis('off')
+            # plt.subplot(224)
+            # plt.title(f'IHC A - {ihca.shape}')
+            # plt.imshow(ihca)
+            # plt.axis('off')
+            # plt.tight_layout()
+            # plt.show()
 
         he  = normalize_image(he, 'he', self.norm_method)
         he  = he.transpose(2, 0, 1).astype(np.float32)

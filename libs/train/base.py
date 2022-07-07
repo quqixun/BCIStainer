@@ -2,10 +2,9 @@ import os
 import json
 import math
 import torch
-import torch.nn as nn
 
-from .losses import GANLoss, RecLoss
 from ..models import define_G, define_D
+from .losses import EvalMetrics, GANLoss, RecLoss, SimLoss
 
 
 class BCIBaseTrainer(object):
@@ -26,6 +25,7 @@ class BCIBaseTrainer(object):
 
         # loss
         self.rec_params = configs.loss.rec
+        self.sim_params = configs.loss.sim
         self.gan_params = configs.loss.gan
 
         # optimizer
@@ -60,7 +60,10 @@ class BCIBaseTrainer(object):
     def _load_losses(self):
 
         self.rec_loss = RecLoss(**self.rec_params)
+        self.sim_loss = SimLoss(**self.sim_params).to(self.device)
         self.gan_loss = GANLoss(**self.gan_params).to(self.device)
+
+        self.eval_metrics = EvalMetrics().to(self.device)
 
         return
 
@@ -70,6 +73,8 @@ class BCIBaseTrainer(object):
             opt_func = torch.optim.Adam
         elif self.opt_name == 'AdamW':
             opt_func = torch.optim.AdamW
+        elif self.opt_name == 'SGD':
+            opt_func = torch.optim.SGD
         else:
             raise ValueError('Unknown optimizer')
 

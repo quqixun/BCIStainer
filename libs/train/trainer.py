@@ -15,7 +15,8 @@ class BCITrainer(BCIBaseTrainer):
 
     def forward(self, train_loader, val_loader):
 
-        best_val_eval = np.inf
+        best_val_psnr = 0.0
+        best_val_ssim = 0.0
         start_time = time.time()
 
         for epoch in range(self.start_epoch, self.epochs):
@@ -26,23 +27,33 @@ class BCITrainer(BCIBaseTrainer):
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
                 self._save_checkpoint(epoch)
 
-            # save model with best val loss
-            if val_metrics['total'] < best_val_eval:
-                best_val_eval = val_metrics['total']
-                self._save_model('best')
-                print('>>> Best Val Epoch - Lowest Total Loss - Save Model <<<')
+            # save model with best val psnr
+            if val_metrics['psnr'] > best_val_psnr:
+                best_val_psnr = val_metrics['psnr']
+                self._save_model('best_psnr')
+                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
+                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
+
+            # save model with best val ssim
+            if val_metrics['ssim'] > best_val_ssim:
+                best_val_ssim = val_metrics['ssim']
+                self._save_model('best_ssim')
+                print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
+                best_ssim_msg = f'- Best SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
 
             # save latest model
             self._save_model('latest')
 
             # write logs
             self._save_logs(epoch, train_metrics, val_metrics)
-
             print()
+
+        print(best_psnr_msg)
+        print(best_ssim_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print('Training time {}'.format(total_time_str))
+        print('- Training time {}'.format(total_time_str))
 
         return
 
@@ -63,6 +74,7 @@ class BCITrainer(BCIBaseTrainer):
             if iter_step % self.accum_iter == 0:
                 self._adjust_learning_rate(iter_step / len(loader) + epoch)
 
+            # forward
             he, ihc, level = [d.to(self.device) for d in data]
             ihc_pred = self.G(he)
 
@@ -70,16 +82,14 @@ class BCITrainer(BCIBaseTrainer):
             self._set_requires_grad(self.D, True)
             D_fake, D_real = self._D_loss(he, ihc, ihc_pred)
             loss_D = (D_fake + D_real) * 0.5
-            loss_D /= self.accum_iter
             loss_D.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
 
             # update G
             self._set_requires_grad(self.D, False)
-            G_gan, G_rec = self._G_loss(he, ihc, ihc_pred)
+            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_pred)
             loss_G = G_gan + G_rec
-            loss_G /= self.accum_iter
             loss_G.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
@@ -89,6 +99,7 @@ class BCITrainer(BCIBaseTrainer):
                 D_real=D_real.item(),
                 G_gan=G_gan.item(),
                 G_rec=G_rec.item(),
+                G_sim=G_sim.item(),
                 lr=self.G_opt.param_groups[0]['lr']
             )
 
@@ -96,7 +107,6 @@ class BCITrainer(BCIBaseTrainer):
 
     @torch.no_grad()
     def _val_epoch(self, loader, epoch):
-        self.D.eval()
         self.G.eval()
 
         header = ' Val  Epoch:[{}]'.format(epoch)
@@ -107,16 +117,11 @@ class BCITrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
             ihc_pred = self.G(he)
 
-            D_fake, D_real = self._D_loss(he, ihc, ihc_pred)
-            G_gan, G_rec = self._G_loss(he, ihc, ihc_pred)
-            total = (D_fake + D_real) * 0.5 + G_gan + G_rec
+            psnr, ssim = self.eval_metrics(ihc, ihc_pred)
 
             logger.update(
-                D_fake=D_fake.item(),
-                D_real=D_real.item(),
-                G_gan=G_gan.item(),
-                G_rec=G_rec.item(),
-                total=total.item()
+                psnr=psnr.item(),
+                ssim=ssim.item(),
             )
 
         return {k: meter.global_avg for k, meter in logger.meters.items()}
@@ -145,4 +150,7 @@ class BCITrainer(BCIBaseTrainer):
         # rec
         G_rec = self.rec_loss(ihc, ihc_pred)
 
-        return G_gan, G_rec
+        # sim
+        G_sim = self.sim_loss(ihc, ihc_pred)
+
+        return G_gan, G_rec, G_sim

@@ -65,7 +65,7 @@ class BCIEvaluator(object):
         ssim_std = np.std(metrics['ssim'])
 
         print(output_dir)
-        print(f'PSNE: {psnr_avg:.3f} ± {psnr_std:.3f}')
+        print(f'PSNR: {psnr_avg:.3f} ± {psnr_std:.3f}')
         print(f'SSIM:  {ssim_avg:.3f} ± {ssim_std:.3f}')
 
         return
