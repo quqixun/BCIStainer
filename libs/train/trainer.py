@@ -76,7 +76,12 @@ class BCITrainer(BCIBaseTrainer):
 
             # forward
             he, ihc, level = [d.to(self.device) for d in data]
-            ihc_pred = self.G(he)
+
+            try:
+                ihc_pred, cls_pred = self.G(he)
+            except:
+                ihc_pred = self.G(he)
+                cls_pred = None
 
             # update D
             self._set_requires_grad(self.D, True)
@@ -89,10 +94,7 @@ class BCITrainer(BCIBaseTrainer):
             # update G
             self._set_requires_grad(self.D, False)
             G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_pred)
-            loss_G = G_gan + G_rec
-            loss_G.backward()
-            if (iter_step + 1) % self.accum_iter == 0:
-                self.G_opt.step()
+            loss_G = G_gan + G_rec + G_sim
 
             logger.update(
                 D_fake=D_fake.item(),
@@ -102,6 +104,15 @@ class BCITrainer(BCIBaseTrainer):
                 G_sim=G_sim.item(),
                 lr=self.G_opt.param_groups[0]['lr']
             )
+
+            if cls_pred is not None:
+                G_cls = self.cls_loss(cls_pred, level)
+                loss_G += G_cls
+                logger.update(G_cls=G_cls.item())
+
+            loss_G.backward()
+            if (iter_step + 1) % self.accum_iter == 0:
+                self.G_opt.step()
 
         return {k: meter.global_avg for k, meter in logger.meters.items()}
 
@@ -115,7 +126,12 @@ class BCITrainer(BCIBaseTrainer):
         data_iter = logger.log_every(loader)
         for _, data in enumerate(data_iter):
             he, ihc, level = [d.to(self.device) for d in data]
-            ihc_pred = self.G(he)
+
+            try:
+                ihc_pred, cls_pred = self.G(he)
+            except:
+                ihc_pred = self.G(he)
+                cls_pred = None
 
             psnr, ssim = self.eval_metrics(ihc, ihc_pred)
 

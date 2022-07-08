@@ -31,6 +31,7 @@ class BCIEvaluator(object):
         G_dict = torch.load(model_path, map_location='cpu')
         self.G.load_state_dict(G_dict)
         self.G = self.G.to(self.device)
+        self.G.eval()
 
         return
     
@@ -78,7 +79,12 @@ class BCIEvaluator(object):
         he = he.transpose(2, 0, 1).astype(np.float32)[None, ...]
         he = torch.Tensor(he).to(self.device)
 
-        ihc_pred = self.G(he)
+        try:
+            ihc_pred, cls_pred = self.G(he)
+        except:
+            ihc_pred = self.G(he)
+            cls_pred = None
+
         ihc_pred = ihc_pred[0].cpu().numpy()
         ihc_pred = ihc_pred.transpose(1, 2, 0)
         ihc_pred = unnormalize_image(ihc_pred, 'ihc', self.norm_method)

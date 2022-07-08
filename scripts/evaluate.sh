@@ -7,7 +7,7 @@
 # ]
 
 
-CUDA_VISIBLE_DEVICES=3                    \
+CUDA_VISIBLE_DEVICES=0                    \
 python evaluate.py                        \
     --data_dir    ./data/val              \
     --exp_root    ./experiments           \

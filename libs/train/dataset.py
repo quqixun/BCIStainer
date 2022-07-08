@@ -34,10 +34,10 @@ class BCIDataset(Dataset):
                     A.Flip(p=0.5),
                     A.Transpose(p=0.5),
                     A.RandomRotate90(p=0.5),
-                    # A.RandomResizedCrop(
-                    #     p=0.3, height=1024, width=1024,
-                    #     scale=(0.75, 1.0)
-                    # ),
+                    A.RandomResizedCrop(
+                        p=0.2, height=1024, width=1024,
+                        scale=(0.8, 1.0)
+                    ),
                     A.OneOf([
                         A.GridDistortion(p=0.3),
                         A.ElasticTransform(p=0.3),

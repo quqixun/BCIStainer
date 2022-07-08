@@ -12,7 +12,7 @@ def main(args):
     configs = OmegaConf.load(args.config_file)
 
     # initializes trainer
-    model_path = os.path.join(args.exp_root, configs.exp, 'model_best.pth')
+    model_path = os.path.join(args.exp_root, configs.exp, 'model_latest.pth')
     evaluator = BCIEvaluator(configs, model_path)
 
     # generates predictions

@@ -2,6 +2,7 @@ import os
 import json
 import math
 import torch
+import torch.nn as nn
 
 from ..models import define_G, define_D
 from .losses import EvalMetrics, GANLoss, RecLoss, SimLoss
@@ -59,6 +60,7 @@ class BCIBaseTrainer(object):
 
     def _load_losses(self):
 
+        self.cls_loss = nn.CrossEntropyLoss()
         self.rec_loss = RecLoss(**self.rec_params)
         self.sim_loss = SimLoss(**self.sim_params).to(self.device)
         self.gan_loss = GANLoss(**self.gan_params).to(self.device)

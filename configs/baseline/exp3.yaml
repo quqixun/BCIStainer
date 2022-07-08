@@ -1,7 +1,7 @@
 ---
 
 
-exp:  baseline
+exp:  baseline_exp3
 seed: 42
 
 loader:
@@ -40,7 +40,7 @@ loss:
     mode:   mse
     weight: 10.0
   sim:
-    mode:   ssim
+    mode:   haarpsi
     weight: 1.0
   gan:
     mode:   lsgan
@@ -52,11 +52,6 @@ optimizer:
     lr:           0.0003
     betas:        [0.5, 0.999]
     weight_decay: 0.0
-  # name: SGD
-  # params:
-  #   lr:           0.0003
-  #   momentum:     0.9
-  #   weight_decay: 0.0
 
 scheduler:
   min_lr: 0.00001
@@ -64,7 +59,7 @@ scheduler:
 
 trainer:
   epochs:     100
-  accum_iter: 8
+  accum_iter: 4
   ckpt_freq:  25
   print_freq: 100
 

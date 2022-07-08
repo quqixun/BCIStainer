@@ -1,5 +1,6 @@
 import functools
 import torch.nn as nn
+import segmentation_models_pytorch as smp
 
 from torch.nn import init
 
@@ -56,6 +57,8 @@ def define_G(configs):
 
     if configs.name == 'resnet_nblocks':
         net = ResnetGenerator(**configs.params)
+    elif configs.name == 'unet':
+        net = smp.Unet(**configs.params)
     else:
         raise NotImplementedError(f'unknown G model name {configs.name}')
 
@@ -205,3 +208,6 @@ class NLayerDiscriminator(nn.Module):
 
     def forward(self, input):
         return self.model(input)
+
+
+
