@@ -2,9 +2,12 @@
 
 
 config_file_list=(
-    ./configs/unet/exp1.yaml
-    ./configs/unet/exp2.yaml
-    ./configs/unet/exp3.yaml
+    # ./configs/unet/exp1.yaml
+    # ./configs/unet/exp2.yaml
+    # ./configs/unet/exp3.yaml
+    ./configs/unet/exp4.yaml
+    ./configs/unet/exp5.yaml
+    ./configs/unet/exp6.yaml
 )
 
 

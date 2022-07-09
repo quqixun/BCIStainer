@@ -6,8 +6,8 @@ seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 4
-  val_batch:   4
+  train_batch: 8
+  val_batch:   8
   num_workers: 20
   pin_memory:  True
 

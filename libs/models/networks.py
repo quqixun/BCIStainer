@@ -59,6 +59,8 @@ def define_G(configs):
         net = ResnetGenerator(**configs.params)
     elif configs.name == 'unet':
         net = smp.Unet(**configs.params)
+    elif configs.name == 'unet++':
+        net = smp.UnetPlusPlus(**configs.params)
     else:
         raise NotImplementedError(f'unknown G model name {configs.name}')
 

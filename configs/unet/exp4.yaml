@@ -1,20 +1,20 @@
 ---
 
 
-exp:  unet_exp2
+exp:  unet_exp4
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
-  val_batch:   8
+  train_batch: 4
+  val_batch:   1
   num_workers: 20
   pin_memory:  True
 
 G:
-  name: unet
+  name: unet++
   params:
-    encoder_name:     resnet34
+    encoder_name:     efficientnet-b3
     encoder_depth:    5
     encoder_weights:  null
     decoder_channels: [256, 128, 64, 32, 16]
@@ -46,30 +46,30 @@ loss:
     mode:   ce
     weight: 1.0
   rec:
-    mode:   mse
+    mode:   mae
     weight: 10.0
   sim:
-    mode:   ms_ssim
+    mode:   ssim
     weight: 1.0
   gan:
     mode:   lsgan
     weight: 1.0
 
 optimizer:
-  name: Adam
+  name: AdamW
   params:
-    lr:           0.0003
-    betas:        [0.5, 0.999]
-    weight_decay: 0.0
+    lr:           0.001
+    betas:        [0.5, 0.9]
+    weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.00001
-  warmup: 0
+  min_lr: 0.0
+  warmup: 40
 
 trainer:
-  epochs:     100
-  accum_iter: 4
-  ckpt_freq:  25
+  epochs:     200
+  accum_iter: 1
+  ckpt_freq:  1000
   print_freq: 100
 
 
