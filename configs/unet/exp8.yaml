@@ -1,7 +1,7 @@
 ---
 
 
-exp:  unet_exp5
+exp:  unet_exp8
 seed: 42
 
 loader:
@@ -14,7 +14,7 @@ loader:
 G:
   name: unet++
   params:
-    encoder_name:     efficientnet-b3
+    encoder_name:     efficientnet-b0
     encoder_depth:    5
     encoder_weights:  null
     decoder_channels: [256, 128, 64, 32, 16]

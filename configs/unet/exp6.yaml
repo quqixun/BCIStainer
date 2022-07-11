@@ -14,7 +14,7 @@ loader:
 G:
   name: unet++
   params:
-    encoder_name:     efficientnet-b3
+    encoder_name:     efficientnet-b2
     encoder_depth:    5
     encoder_weights:  null
     decoder_channels: [256, 128, 64, 32, 16]
@@ -43,13 +43,13 @@ D:
 
 loss:
   cls:
-    mode:   ce
-    weight: 1.0
+    mode:   focal
+    weight: 5.0
   rec:
-    mode:   mae
+    mode:   lpips
     weight: 10.0
   sim:
-    mode:   haarpsi
+    mode:   ssim
     weight: 1.0
   gan:
     mode:   lsgan
@@ -64,10 +64,10 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 40
+  warmup: 20
 
 trainer:
-  epochs:     200
+  epochs:     100
   accum_iter: 1
   ckpt_freq:  1000
   print_freq: 100

@@ -94,14 +94,14 @@ class BCIDataset(Dataset):
 
 
 def get_dataloader(mode, data_dir, configs):
-    assert mode in ['train', 'val', 'test']
+    assert mode in ['train', 'val']
 
     if mode == 'train':
         batch_size = configs.train_batch
         drop_last  = True
         shuffle    = True
         augment    = True
-    else:  # mode in ['val', 'test']
+    else:  # mode == 'val'
         batch_size = configs.val_batch
         drop_last  = False
         shuffle    = False

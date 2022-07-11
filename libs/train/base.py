@@ -2,10 +2,9 @@ import os
 import json
 import math
 import torch
-import torch.nn as nn
 
+from .losses import *
 from ..models import define_G, define_D
-from .losses import EvalMetrics, GANLoss, RecLoss, SimLoss
 
 
 class BCIBaseTrainer(object):
@@ -25,6 +24,7 @@ class BCIBaseTrainer(object):
         self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         # loss
+        self.cls_params = configs.loss.cls
         self.rec_params = configs.loss.rec
         self.sim_params = configs.loss.sim
         self.gan_params = configs.loss.gan
@@ -60,8 +60,8 @@ class BCIBaseTrainer(object):
 
     def _load_losses(self):
 
-        self.cls_loss = nn.CrossEntropyLoss()
-        self.rec_loss = RecLoss(**self.rec_params)
+        self.cls_loss = ClsLoss(**self.cls_params).to(self.device)
+        self.rec_loss = RecLoss(**self.rec_params).to(self.device)
         self.sim_loss = SimLoss(**self.sim_params).to(self.device)
         self.gan_loss = GANLoss(**self.gan_params).to(self.device)
 
@@ -112,7 +112,7 @@ class BCIBaseTrainer(object):
             self.G.load_state_dict(checkpoint['G'])
             self.D_opt.load_state_dict(checkpoint['D_opt'])
             self.G_opt.load_state_dict(checkpoint['G_opt'])
-        except Exception as e:
+        except Exception:
             print('Faild to resume checkpoint')
 
         return
@@ -177,6 +177,7 @@ class BCIBaseTrainer(object):
 
         if not isinstance(nets, list):
             nets = [nets]
+
         for net in nets:
             if net is not None:
                 for param in net.parameters():

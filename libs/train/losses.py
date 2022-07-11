@@ -1,14 +1,34 @@
+import lpips
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from piqa import SSIM, MS_SSIM, HaarPSI, PSNR
 
+
+class ClsLoss(nn.Module):
+
+    def __init__(self, mode, weight=1.0):
+        super(ClsLoss, self).__init__()
+
+        self.weight = weight
+
+        if mode == 'ce':
+            self.loss = nn.CrossEntropyLoss()
+        elif mode == 'focal':
+            self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
+        else:
+            raise NotImplementedError(f'cls mode {mode} not implemented')
+
+    def forward(self, target, prediction):
+        return self.loss(target, prediction) * self.weight
 
 class RecLoss(nn.Module):
 
     def __init__(self, mode, weight=1.0):
         super(RecLoss, self).__init__()
 
+        self.mode = mode
         self.weight = weight
 
         if mode == 'mse':
@@ -17,11 +37,16 @@ class RecLoss(nn.Module):
             self.loss = nn.L1Loss()
         elif mode == 'smae':
             self.loss = nn.SmoothL1Loss()
+        elif mode == 'lpips':
+            self.loss = lpips.LPIPS(net='alex')
         else:
             raise NotImplementedError(f'rec mode {mode} not implemented')
 
     def forward(self, target, prediction):
-        return self.loss(target, prediction) * self.weight
+        loss = self.loss(target, prediction)
+        if self.mode == 'lpips':
+            loss = loss.mean()
+        return  loss * self.weight
 
 
 class SimLoss(nn.Module):
@@ -104,3 +129,42 @@ class EvalMetrics(nn.Module):
         ssim = self.ssim(prediction_, target_)
 
         return psnr, ssim
+
+
+class FocalLoss(nn.Module):
+    # https://github.com/yatengLG/Focal-Loss-Pytorch
+
+    def __init__(self, alpha=[0.5, 0.2, 0.2, 0.1], gamma=2,
+                 num_classes=4, size_average=True):
+        super(FocalLoss,self).__init__()
+
+        if isinstance(alpha, list):
+            assert len(alpha) == num_classes
+            self.alpha = torch.Tensor(alpha)
+        else:
+            assert alpha < 1
+            self.alpha = torch.zeros(num_classes)
+            self.alpha[0] += alpha
+            self.alpha[1:] += 1 - alpha
+
+        self.gamma = gamma
+        self.size_average = size_average
+
+    def forward(self, labels, preds):
+
+        preds = preds.view(-1, preds.size(-1)).float()
+        alpha = self.alpha.to(preds.device)
+        preds_logsoft = F.log_softmax(preds, dim=1)
+        preds_softmax = torch.exp(preds_logsoft)
+
+        preds_softmax = preds_softmax.gather(1, labels.view(-1, 1))
+        preds_logsoft = preds_logsoft.gather(1, labels.view(-1, 1))
+        alpha = alpha.gather(0, labels.view(-1))
+        loss = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
+
+        loss = torch.mul(alpha, loss.t())
+        if self.size_average:
+            loss = loss.mean()
+        else:
+            loss = loss.sum()
+        return loss

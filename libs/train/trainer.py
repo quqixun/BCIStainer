@@ -78,10 +78,10 @@ class BCITrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
 
             try:
-                ihc_pred, cls_pred = self.G(he)
+                ihc_pred, level_pred = self.G(he)
             except:
                 ihc_pred = self.G(he)
-                cls_pred = None
+                level_pred = None
 
             # update D
             self._set_requires_grad(self.D, True)
@@ -105,8 +105,8 @@ class BCITrainer(BCIBaseTrainer):
                 lr=self.G_opt.param_groups[0]['lr']
             )
 
-            if cls_pred is not None:
-                G_cls = self.cls_loss(cls_pred, level)
+            if level_pred is not None:
+                G_cls = self.cls_loss(level, level_pred)
                 loss_G += G_cls
                 logger.update(G_cls=G_cls.item())
 
@@ -128,10 +128,10 @@ class BCITrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
 
             try:
-                ihc_pred, cls_pred = self.G(he)
+                ihc_pred, level_pred = self.G(he)
             except:
                 ihc_pred = self.G(he)
-                cls_pred = None
+                level_pred = None
 
             psnr, ssim = self.eval_metrics(ihc, ihc_pred)
 
