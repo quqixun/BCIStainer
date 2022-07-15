@@ -147,12 +147,12 @@ class BCITrainer(BCIBaseTrainer):
         # fake
         fake = torch.cat((he, ihc_pred), 1)
         pred_fake = self.D(fake.detach())
-        D_fake = self.gan_loss(pred_fake, False)
+        D_fake = self.gan_loss(pred_fake, False, for_D=True)
 
         # real
         real = torch.cat((he, ihc), 1)
         pred_real = self.D(real)
-        D_real = self.gan_loss(pred_real, True)
+        D_real = self.gan_loss(pred_real, True, for_D=True)
 
         return D_fake, D_real
 
@@ -161,7 +161,7 @@ class BCITrainer(BCIBaseTrainer):
         # gan loss
         fake = torch.cat((he, ihc_pred), 1)
         pred_fake = self.D(fake)
-        G_gan = self.gan_loss(pred_fake, True)
+        G_gan = self.gan_loss(pred_fake, True, for_D=False)
 
         # rec
         G_rec = self.rec_loss(ihc, ihc_pred)

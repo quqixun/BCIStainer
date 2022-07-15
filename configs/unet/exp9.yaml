@@ -1,0 +1,76 @@
+---
+
+
+exp:  unet_exp9
+seed: 42
+
+loader:
+  norm_method: global_minmax
+  train_batch: 1
+  val_batch:   1
+  num_workers: 20
+  pin_memory:  True
+
+G:
+  name: unet++
+  params:
+    encoder_name:     efficientnet-b0
+    encoder_depth:    5
+    encoder_weights:  imagenet
+    decoder_channels: [256, 128, 64, 32, 16]
+    in_channels:      3
+    classes:          3
+    activation:       tanh
+    aux_params:
+      classes:        4
+      pooling:        avg
+      dropout:        0.2
+      activation:     null
+  init:
+    init_type:   normal
+    init_gain:   0.02
+
+D:
+  name: patch_gan
+  params:
+    input_nc:  6
+    ndf:       64
+    n_layers:  3
+    norm_type: batch
+  init:
+    init_type: normal
+    init_gain: 0.02
+
+loss:
+  cls:
+    mode:   ce
+    weight: 1.0
+  rec:
+    mode:   mae
+    weight: 10.0
+  sim:
+    mode:   ssim
+    weight: 1.0
+  gan:
+    mode:   lsgan
+    weight: 1.0
+
+optimizer:
+  name: AdamW
+  params:
+    lr:           0.001
+    betas:        [0.5, 0.9]
+    weight_decay: 0.05
+
+scheduler:
+  min_lr: 0.0
+  warmup: 20
+
+trainer:
+  epochs:     100
+  accum_iter: 1
+  ckpt_freq:  1000
+  print_freq: 100
+
+
+...

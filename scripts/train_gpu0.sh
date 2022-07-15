@@ -2,16 +2,16 @@
 
 
 config_file_list=(
-    ./configs/baseline/exp4.yaml
-    ./configs/baseline/exp5.yaml
-    ./configs/baseline/exp6.yaml
-)                            
+    ./configs/unet/exp13.yaml
+    ./configs/unet/exp14.yaml
+    ./configs/unet/exp15.yaml
+)
 
 
 for config_file in ${config_file_list[@]}; do
     # echo $config_file
 
-    CUDA_VISIBLE_DEVICES=3                    \
+    CUDA_VISIBLE_DEVICES=0                    \
     python train.py                           \
         --train_dir   ./data/train            \
         --val_dir     ./data/val              \

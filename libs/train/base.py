@@ -63,7 +63,7 @@ class BCIBaseTrainer(object):
         self.cls_loss = ClsLoss(**self.cls_params).to(self.device)
         self.rec_loss = RecLoss(**self.rec_params).to(self.device)
         self.sim_loss = SimLoss(**self.sim_params).to(self.device)
-        self.gan_loss = GANLoss(**self.gan_params).to(self.device)
+        self.gan_loss = MSGANLoss(**self.gan_params).to(self.device)
 
         self.eval_metrics = EvalMetrics().to(self.device)
 

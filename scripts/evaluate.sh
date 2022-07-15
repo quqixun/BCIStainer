@@ -2,13 +2,21 @@
 
 
 config_file_list=(
-    ./configs/baseline/exp1.yaml
-    ./configs/baseline/exp2.yaml
-    ./configs/baseline/exp3.yaml
-    ./configs/unet/exp1.yaml
-    ./configs/unet/exp2.yaml
-    ./configs/unet/exp3.yaml
-    ./configs/unet/exp4.yaml
+    # ./configs/baseline/exp1.yaml
+    # ./configs/baseline/exp2.yaml
+    # ./configs/baseline/exp3.yaml
+    # ./configs/unet/exp1.yaml
+    # ./configs/unet/exp2.yaml
+    # ./configs/unet/exp3.yaml
+    # ./configs/unet/exp4.yaml
+    # ./configs/unet/exp5.yaml
+    # ./configs/unet/exp6.yaml
+    # ./configs/unet/exp7.yaml
+    # ./configs/unet/exp8.yaml
+    # ./configs/unet/exp9.yaml
+    # ./configs/unet/exp10.yaml
+    # ./configs/unet/exp11.yaml
+    ./configs/unet/exp12.yaml
 )
 
 model_name_list=(

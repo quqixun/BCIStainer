@@ -2,9 +2,9 @@
 
 
 config_file_list=(
-    ./configs/baseline/exp1.yaml
-    ./configs/baseline/exp2.yaml
-    ./configs/baseline/exp3.yaml
+    ./configs/unet/exp16.yaml
+    ./configs/unet/exp17.yaml
+    ./configs/unet/exp18.yaml
 )
 
 

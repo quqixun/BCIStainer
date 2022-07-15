@@ -21,7 +21,7 @@ class ClsLoss(nn.Module):
             raise NotImplementedError(f'cls mode {mode} not implemented')
 
     def forward(self, target, prediction):
-        return self.loss(target, prediction) * self.weight
+        return self.loss(prediction, target) * self.weight
 
 class RecLoss(nn.Module):
 
@@ -73,43 +73,121 @@ class SimLoss(nn.Module):
         return sim_loss * self.weight
 
 
-class GANLoss(nn.Module):
+# class GANLoss(nn.Module):
 
-    def __init__(self, mode, weight=1.0, target_real_label=1.0, target_fake_label=0.0):
-        super(GANLoss, self).__init__()
+#     def __init__(self, mode, weight=1.0, target_real_label=1.0, target_fake_label=0.0):
+#         super(GANLoss, self).__init__()
 
-        self.register_buffer('real_label', torch.tensor(target_real_label))
-        self.register_buffer('fake_label', torch.tensor(target_fake_label))
+#         self.register_buffer('real_label', torch.tensor(target_real_label))
+#         self.register_buffer('fake_label', torch.tensor(target_fake_label))
+#         self.mode = mode
+#         self.weight = weight
+
+#         if mode == 'lsgan':
+#             self.loss = nn.MSELoss()
+#         elif mode == 'vanilla':
+#             self.loss = nn.BCEWithLogitsLoss()
+#         elif mode in ['wgangp']:
+#             self.loss = None
+#         else:
+#             raise NotImplementedError(f'gan mode {mode} not implemented')
+
+#     def get_target_tensor(self, prediction, target_is_real):
+#         if target_is_real:
+#             target_tensor = self.real_label
+#         else:
+#             target_tensor = self.fake_label
+#         return target_tensor.expand_as(prediction)
+
+#     def __call__(self, prediction, target_is_real):
+
+#         if self.mode in ['lsgan', 'vanilla']:
+#             target_tensor = self.get_target_tensor(prediction, target_is_real)
+#             loss = self.loss(prediction, target_tensor)
+#         elif self.mode == 'wgangp':
+#             if target_is_real:
+#                 loss = -prediction.mean()
+#             else:
+#                 loss = prediction.mean()
+#         return loss * self.weight
+
+
+class MSGANLoss(nn.Module):
+
+    def __init__(self, mode='hinge', weight=1.0, target_real_label=1.0,
+                 target_fake_label=0.0, tensor=torch.FloatTensor):
+        super(MSGANLoss, self).__init__()
+
+        self.real_label = target_real_label
+        self.fake_label = target_fake_label
+        self.real_label_tensor = None
+        self.fake_label_tensor = None
+        self.zero_tensor = None
+        self.Tensor = tensor
         self.mode = mode
         self.weight = weight
 
         if mode == 'lsgan':
-            self.loss = nn.MSELoss()
-        elif mode == 'vanilla':
-            self.loss = nn.BCEWithLogitsLoss()
-        elif mode in ['wgangp']:
-            self.loss = None
+            pass
+        elif mode == 'original':
+            pass
+        elif mode == 'wgan':
+            pass
+        elif mode == 'hinge':
+            pass
         else:
             raise NotImplementedError(f'gan mode {mode} not implemented')
 
-    def get_target_tensor(self, prediction, target_is_real):
+    def get_target_tensor(self, input, target_is_real):
+        # label smoothing
+        smooth = torch.rand(input.size(), device=input.device) / 10
+
         if target_is_real:
-            target_tensor = self.real_label
+            return torch.ones_like(input).detach() - smooth
         else:
-            target_tensor = self.fake_label
-        return target_tensor.expand_as(prediction)
+            return torch.zeros_like(input).detach() + smooth
 
-    def __call__(self, prediction, target_is_real):
+    def get_zero_tensor(self, input):
+        return torch.zeros_like(input).detach()
 
-        if self.mode in ['lsgan', 'vanilla']:
-            target_tensor = self.get_target_tensor(prediction, target_is_real)
-            loss = self.loss(prediction, target_tensor)
-        elif self.mode == 'wgangp':
-            if target_is_real:
-                loss = -prediction.mean()
+    def loss(self, input, target_is_real, for_D=True):
+        if self.mode == 'original':  # cross entropy loss
+            target_tensor = self.get_target_tensor(input, target_is_real)
+            loss = F.binary_cross_entropy_with_logits(input, target_tensor)
+            return loss
+        elif self.mode == 'lsgan':
+            target_tensor = self.get_target_tensor(input, target_is_real)
+            return F.mse_loss(input, target_tensor)
+        elif self.mode == 'hinge':
+            if for_D:
+                if target_is_real:
+                    minval = torch.min(input - 1, self.get_zero_tensor(input))
+                    loss = -torch.mean(minval)
+                else:
+                    minval = torch.min(-input - 1, self.get_zero_tensor(input))
+                    loss = -torch.mean(minval)
             else:
-                loss = prediction.mean()
-        return loss * self.weight
+                assert target_is_real, "The generator's hinge loss must be aiming for real"
+                loss = -torch.mean(input)
+            return loss
+        else:
+            # wgan
+            if target_is_real:
+                return -input.mean()
+            else:
+                return input.mean()
+
+    def __call__(self, input, target_is_real, for_D=True):
+        if isinstance(input, list):
+            loss = 0
+            for pred_i in input:
+                if isinstance(pred_i, list):
+                    pred_i = pred_i[-1]
+                loss_tensor = self.loss(pred_i, target_is_real, for_D)
+                loss += loss_tensor
+            return loss / len(input) * self.weight
+        else:
+            return self.loss(input, target_is_real, for_D) * self.weight
 
 
 class EvalMetrics(nn.Module):
@@ -150,7 +228,7 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.size_average = size_average
 
-    def forward(self, labels, preds):
+    def forward(self, preds, labels):
 
         preds = preds.view(-1, preds.size(-1)).float()
         alpha = self.alpha.to(preds.device)
