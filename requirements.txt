@@ -10,3 +10,4 @@ scikit-image
 opencv-python
 pandas
 piqa
+lpips
