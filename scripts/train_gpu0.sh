@@ -2,9 +2,8 @@
 
 
 config_file_list=(
-    ./configs/unet/exp13.yaml
-    ./configs/unet/exp14.yaml
-    ./configs/unet/exp15.yaml
+    ./configs/resnet_ada/exp1.yaml
+    ./configs/resnet_ada/exp3.yaml
 )
 
 

@@ -1,3 +1,5 @@
+import math
+import torch
 import functools
 import torch.nn as nn
 import segmentation_models_pytorch as smp
@@ -5,9 +7,8 @@ import segmentation_models_pytorch as smp
 from torch.nn import init
 
 
-###############################################################################
+# ------------------------------------------------------------------------------
 # Helper Functions
-###############################################################################
 
 
 class Identity(nn.Module):
@@ -57,6 +58,8 @@ def define_G(configs):
 
     if configs.name == 'resnet_nblocks':
         net = ResnetGenerator(**configs.params)
+    elif configs.name == 'resnet_ada_nblocks':
+        net = ResnetAdaGenerator(**configs.params)
     elif configs.name == 'unet':
         net = smp.Unet(**configs.params)
     elif configs.name == 'unet++':
@@ -81,9 +84,8 @@ def define_D(configs):
     return net
 
 
-##############################################################################
-# Classes
-##############################################################################
+# ------------------------------------------------------------------------------
+# Generators
 
 
 class ResnetGenerator(nn.Module):
@@ -186,6 +188,145 @@ class ResnetBlock(nn.Module):
         return out
 
 
+class AdaIN(nn.Module):
+    def __init__(self, style_dim, num_features):
+        super().__init__()
+        self.norm = nn.InstanceNorm2d(num_features, affine=False)
+        self.fc = nn.Linear(style_dim, num_features * 2)
+
+    def forward(self, x, s):
+        h = self.fc(s)
+        h = h.view(h.size(0), h.size(1), 1, 1)
+        gamma, beta = torch.chunk(h, chunks=2, dim=1)
+        return (1 + gamma) * self.norm(x) + beta
+
+
+class ResnetAdaGenerator(nn.Module):
+
+    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_blocks=6, ngf=32,
+                 norm_type='none', dropout=0.0):
+        super(ResnetAdaGenerator, self).__init__()
+
+        norm_layer = get_norm_layer(norm_type=norm_type)
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        self.inconv = nn.Sequential(
+            nn.Conv2d(input_nc, ngf, kernel_size=7, padding=3, bias=use_bias),
+            norm_layer(ngf),
+            nn.LeakyReLU(0.2, True)
+        )
+
+        encoder1 = []
+        enc1_downsampling = 3
+        for i in range(enc1_downsampling):
+            mult     = 2 ** i
+            in_dims  = ngf * mult
+            out_dims = ngf * mult * 2
+            encoder1 += [
+                nn.Conv2d(in_dims, out_dims, kernel_size=3, stride=2, padding=1, bias=use_bias),
+                norm_layer(out_dims),
+                nn.LeakyReLU(0.2, True)
+            ]
+        self.encoder1 = nn.Sequential(*encoder1)
+
+        encoder2 = []
+        style_dims = out_dims
+        enc2_downsampling = 4
+        for i in range(enc2_downsampling):
+            encoder2 += [
+                nn.Conv2d(style_dims, style_dims, kernel_size=3, stride=2, padding=1, bias=use_bias),
+                norm_layer(style_dims),
+                nn.LeakyReLU(0.2, True)
+            ]
+        encoder2 += [nn.AdaptiveAvgPool2d(1), nn.Flatten(1)]
+        self.encoder2 = nn.Sequential(*encoder2)
+
+        cls_head = []
+        if dropout > 0:
+            cls_head += [nn.Dropout(dropout)]
+        cls_head += [nn.Linear(style_dims, n_classes)]
+        self.cls_head = nn.Sequential(*cls_head)
+
+        decoder1 = []
+        conv_dims = out_dims
+        for i in range(n_blocks):
+            decoder1 += [
+                ResnetAdaBlock(
+                    style_dims, conv_dims, norm_layer=norm_layer,
+                    dropout=dropout, use_bias=use_bias
+                )
+            ]
+        self.decoder1 = nn.Sequential(*decoder1)
+
+        decoder2 = []
+        for i in range(enc1_downsampling):
+            mult = 2 ** (enc1_downsampling - i)
+            decoder2 += [
+                nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2),
+                                   kernel_size=3, stride=2,
+                                   padding=1, output_padding=1,
+                                   bias=use_bias),
+                norm_layer(int(ngf * mult / 2)),
+                nn.LeakyReLU(0.2, True),
+            ]
+        decoder2 += [
+            nn.Conv2d(ngf, output_nc, kernel_size=3, padding=1),
+            nn.Tanh()
+        ]
+        self.decoder2 = nn.Sequential(*decoder2)
+
+    def forward(self, x):
+
+        x_in = self.inconv(x)
+        enc1 = self.encoder1(x_in)
+        style = self.encoder2(enc1)
+        level = self.cls_head(style)
+
+        dec1, _ = self.decoder1([enc1, style])
+        out = self.decoder2(dec1)
+
+        return out, level
+
+
+class ResnetAdaBlock(nn.Module):
+
+    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias):
+        super(ResnetAdaBlock, self).__init__()
+
+        self.style1 = AdaIN(style_dim, conv_dim)
+        self.style2 = AdaIN(style_dim, conv_dim)
+
+        conv1 = [
+            nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(conv_dim),
+            nn.LeakyReLU(0.2, True)
+        ]
+        if dropout > 0:
+            conv1 += [nn.Dropout(dropout)]
+        self.conv1 = nn.Sequential(*conv1)
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(conv_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x):
+        x_in, style = x
+        out = self.style1(x_in, style)
+        out = self.conv1(out)
+        out = self.style2(out, style)
+        out = self.conv2(out)
+        return (x_in + out) / math.sqrt(2), style
+
+
+# ------------------------------------------------------------------------------
+# Discriminators
+
+
 class MultiscaleDiscriminator(nn.Module):
 
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_type='batch', num_D=3):
@@ -256,6 +397,3 @@ class NLayerDiscriminator(nn.Module):
 
     def forward(self, input):
         return self.model(input)
-
-
-
