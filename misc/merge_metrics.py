@@ -1,12 +1,11 @@
 import os
-import numpy as np
 import pandas as pd
 
 
 if __name__ == '__main__':
 
-    input_root = '../outputs'
-    output_dir = '../assets'
+    input_root = './outputs'
+    output_dir = './assets'
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, 'metrics.csv')
 

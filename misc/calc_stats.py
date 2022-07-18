@@ -35,8 +35,8 @@ def get_mean_std(data_dir):
 
 if __name__ == '__main__':
 
-    he_dir  = '../data/train/HE'
-    ihc_dir = '../data/train/IHC'
+    he_dir  = './data/train/HE'
+    ihc_dir = './data/train/IHC'
 
     get_mean_std(he_dir)
     get_mean_std(ihc_dir)

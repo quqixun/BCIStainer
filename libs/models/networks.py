@@ -203,8 +203,8 @@ class AdaIN(nn.Module):
 
 class ResnetAdaGenerator(nn.Module):
 
-    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_blocks=6, ngf=32,
-                 norm_type='none', dropout=0.0):
+    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
+                 n_blocks=9, ngf=32, norm_type='none', dropout=0.0):
         super(ResnetAdaGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -220,7 +220,7 @@ class ResnetAdaGenerator(nn.Module):
         )
 
         encoder1 = []
-        enc1_downsampling = 3
+        enc1_downsampling = n_enc1
         for i in range(enc1_downsampling):
             mult     = 2 ** i
             in_dims  = ngf * mult
@@ -234,7 +234,7 @@ class ResnetAdaGenerator(nn.Module):
 
         encoder2 = []
         style_dims = out_dims
-        enc2_downsampling = 4
+        enc2_downsampling = 7 - n_enc1
         for i in range(enc2_downsampling):
             encoder2 += [
                 nn.Conv2d(style_dims, style_dims, kernel_size=3, stride=2, padding=1, bias=use_bias),

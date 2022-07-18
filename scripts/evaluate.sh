@@ -5,9 +5,9 @@ config_file_list=(
     # ./configs/baseline/exp1.yaml
     # ./configs/baseline/exp2.yaml
     # ./configs/baseline/exp3.yaml
-    ./configs/baseline/exp4.yaml
-    ./configs/baseline/exp5.yaml
-    # ./configs/baseline/exp6.yaml
+    # ./configs/baseline/exp4.yaml
+    # ./configs/baseline/exp5.yaml
+    ./configs/baseline/exp6.yaml
     # ./configs/unet/exp1.yaml
     # ./configs/unet/exp2.yaml
     # ./configs/unet/exp3.yaml
@@ -20,12 +20,16 @@ config_file_list=(
     # ./configs/unet/exp10.yaml
     # ./configs/unet/exp11.yaml
     # ./configs/unet/exp12.yaml
-    ./configs/unet/exp13.yaml
-    ./configs/unet/exp14.yaml
-    ./configs/unet/exp15.yaml
-    ./configs/unet/exp16.yaml
-    ./configs/unet/exp17.yaml
-    ./configs/unet/exp18.yaml
+    # ./configs/unet/exp13.yaml
+    # ./configs/unet/exp14.yaml
+    # ./configs/unet/exp15.yaml
+    # ./configs/unet/exp16.yaml
+    # ./configs/unet/exp17.yaml
+    # ./configs/unet/exp18.yaml
+    ./configs/resnet_ada/exp1.yaml
+    ./configs/resnet_ada/exp2.yaml
+    ./configs/resnet_ada/exp3.yaml
+    ./configs/resnet_ada/exp4.yaml
 )
 
 model_name_list=(

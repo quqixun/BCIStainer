@@ -14,12 +14,14 @@ loader:
 G:
   name: resnet_ada_nblocks
   params:
-    input_nc:    3
-    output_nc:   3
-    n_blocks:    9
-    ngf:         32
-    norm_type:   none
-    dropout:     0.2
+    input_nc:  3
+    output_nc: 3
+    n_classes: 4
+    n_enc1:    3
+    n_blocks:  9
+    ngf:       32
+    norm_type: none
+    dropout:   0.2
   init:
     init_type:   normal
     init_gain:   0.02

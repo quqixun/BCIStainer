@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_exp4
+exp:  resnet_ada_exp5
 seed: 42
 
 loader:
@@ -23,17 +23,16 @@ G:
     norm_type: batch
     dropout:   0.2
   init:
-    init_type:   normal
-    init_gain:   0.02
+    init_type: normal
+    init_gain: 0.02
 
 D:
-  name: ms_gan
+  name: patch_gan
   params:
     input_nc:  6
     ndf:       64
     n_layers:  3
     norm_type: batch
-    num_D:     3
   init:
     init_type: normal
     init_gain: 0.02
@@ -43,7 +42,7 @@ loss:
     mode:   ce
     weight: 1.0
   rec:
-    mode:   mse
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
