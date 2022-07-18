@@ -7,7 +7,7 @@ config_file_list=(
     # ./configs/baseline/exp3.yaml
     # ./configs/baseline/exp4.yaml
     # ./configs/baseline/exp5.yaml
-    ./configs/baseline/exp6.yaml
+    # ./configs/baseline/exp6.yaml
     # ./configs/unet/exp1.yaml
     # ./configs/unet/exp2.yaml
     # ./configs/unet/exp3.yaml
@@ -26,10 +26,13 @@ config_file_list=(
     # ./configs/unet/exp16.yaml
     # ./configs/unet/exp17.yaml
     # ./configs/unet/exp18.yaml
-    ./configs/resnet_ada/exp1.yaml
-    ./configs/resnet_ada/exp2.yaml
-    ./configs/resnet_ada/exp3.yaml
-    ./configs/resnet_ada/exp4.yaml
+    # ./configs/resnet_ada/exp1.yaml
+    # ./configs/resnet_ada/exp2.yaml
+    # ./configs/resnet_ada/exp3.yaml
+    # ./configs/resnet_ada/exp4.yaml
+    ./configs/resnet_ada/exp5.yaml
+    ./configs/resnet_ada/exp6.yaml
+    ./configs/resnet_ada/exp7.yaml
 )
 
 model_name_list=(
