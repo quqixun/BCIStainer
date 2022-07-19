@@ -78,7 +78,8 @@ class ResnetGenerator(nn.Module):
 class ResnetAdaGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
-                 n_blocks=9, ngf=32, norm_type='none', dropout=0.0):
+                 n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
+                 last_ks=3):
         super(ResnetAdaGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -147,7 +148,7 @@ class ResnetAdaGenerator(nn.Module):
                 nn.LeakyReLU(0.2, True),
             ]
         decoder2 += [
-            nn.Conv2d(ngf, output_nc, kernel_size=3, padding=1),
+            nn.Conv2d(ngf, output_nc, kernel_size=last_ks, padding=last_ks // 2),
             nn.Tanh()
         ]
         self.decoder2 = nn.Sequential(*decoder2)
