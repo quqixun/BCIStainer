@@ -1,6 +1,7 @@
 import math
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class ResnetBlock(nn.Module):
@@ -53,7 +54,7 @@ class ResnetBlock(nn.Module):
 
 class AdaIN(nn.Module):
     def __init__(self, style_dim, num_features):
-        super().__init__()
+        super(AdaIN, self).__init__()
         self.norm = nn.InstanceNorm2d(num_features, affine=False)
         self.fc = nn.Linear(style_dim, num_features * 2)
 
@@ -94,3 +95,83 @@ class ResnetAdaBlock(nn.Module):
         out = self.style2(out, style)
         out = self.conv2(out)
         return (x_in + out) / math.sqrt(2), style
+
+
+class DownBlock(nn.Module):
+
+    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(DownBlock, self).__init__()
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout),
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x):
+        out = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
+        return self.conv(out)
+
+
+class UpBlock(nn.Module):
+
+    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(UpBlock, self).__init__()
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout),
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x1, x2):
+        x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
+        if x2 is not None:
+            x = torch.cat([x1, x2], dim=1)
+        else:
+            x = x1
+
+        return self.conv(x)
+
+
+class UpAdaBlock(nn.Module):
+
+    def __init__(self, style_dim, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(UpAdaBlock, self).__init__()
+
+        self.style1 = AdaIN(style_dim, in_dim)
+        self.style2 = AdaIN(style_dim, out_dim)
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout)
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+        )
+
+    def forward(self, x1, x2, style):
+        x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
+        if x2 is not None:
+            x = torch.cat([x1, x2], dim=1)
+        else:
+            x = x1
+
+        out = self.style1(x, style)
+        out = self.conv1(out)
+        out = self.style2(out, style)
+        out = self.conv2(out)
+        return out

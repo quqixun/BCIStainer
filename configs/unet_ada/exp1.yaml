@@ -1,28 +1,28 @@
 ---
 
 
-exp:  resnet_ada_exp11
+exp:  unet_ada_exp1
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 2
   val_batch:   1
   num_workers: 20
   pin_memory:  True
 
 G:
-  name: resnet_ada_nblocks
+  name: unet_ada
   params:
     input_nc:  3
     output_nc: 3
     n_classes: 4
     n_enc1:    3
-    n_blocks:  9
-    ngf:       32
+    n_blocks:  4
+    ngf:       16
     norm_type: batch
-    dropout:   0.2
-    last_ks:   3
+    dropout:   0.0
+    last_ks:   1
   init:
     init_type: normal
     init_gain: 0.02
@@ -53,19 +53,19 @@ loss:
     weight: 1.0
 
 optimizer:
-  name: Adam
+  name: AdamW
   params:
-    lr:           0.0001
+    lr:           0.001
     betas:        [0.5, 0.9]
-    weight_decay: 0.0
+    weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0001
-  warmup: 0
+  min_lr: 0.0
+  warmup: 20
 
 trainer:
   epochs:     100
-  accum_iter: 1
+  accum_iter: 2
   ckpt_freq:  1000
   print_freq: 100
 
