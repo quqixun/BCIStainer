@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_l_exp1
+exp:  resnet_ada_l_exp3
 seed: 42
 
 loader:
@@ -21,7 +21,7 @@ G:
     n_blocks:  9
     ngf:       32
     norm_type: batch
-    dropout:   0.2
+    dropout:   0.0
     last_ks:   7
   init:
     init_type: normal
