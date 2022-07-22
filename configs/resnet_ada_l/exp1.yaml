@@ -43,13 +43,13 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   lsgan
+    mode:   charb
     weight: 1.0
 
 optimizer:

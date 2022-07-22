@@ -43,6 +43,7 @@ class BCIBaseTrainer(object):
         self.ckpt_freq   = configs.trainer.ckpt_freq
         self.print_freq  = configs.trainer.print_freq
         self.accum_iter  = configs.trainer.accum_iter
+        self.diffaug     = configs.trainer.get('diffaug', False)
 
         self._load_model()
         self._load_losses()

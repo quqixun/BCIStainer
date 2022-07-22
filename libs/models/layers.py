@@ -103,7 +103,7 @@ class DownBlock(nn.Module):
         super(DownBlock, self).__init__()
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, bias=use_bias),
             norm_layer(out_dim),
             nn.LeakyReLU(0.2, True),
             nn.Dropout(dropout),
@@ -113,14 +113,33 @@ class DownBlock(nn.Module):
         )
 
     def forward(self, x):
-        out = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
-        return self.conv(out)
+        return self.conv(x)
 
 
 class UpBlock(nn.Module):
 
     def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
         super(UpBlock, self).__init__()
+
+        self.conv = nn.Sequential(
+            nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=2,
+                               padding=1, output_padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout),
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x):
+        return self.conv(x)
+
+
+class UpSkipBlock(nn.Module):
+
+    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(UpSkipBlock, self).__init__()
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
@@ -134,11 +153,7 @@ class UpBlock(nn.Module):
 
     def forward(self, x1, x2):
         x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
-        if x2 is not None:
-            x = torch.cat([x1, x2], dim=1)
-        else:
-            x = x1
-
+        x = torch.cat([x1, x2], dim=1)
         return self.conv(x)
 
 
@@ -146,6 +161,36 @@ class UpAdaBlock(nn.Module):
 
     def __init__(self, style_dim, in_dim, out_dim, norm_layer, dropout, use_bias):
         super(UpAdaBlock, self).__init__()
+
+        self.style1 = AdaIN(style_dim, in_dim)
+        self.style2 = AdaIN(style_dim, out_dim)
+
+        self.conv1 = nn.Sequential(
+            nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=2,
+                               padding=1, output_padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout)
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+        )
+
+    def forward(self, x, style):
+        out = self.style1(x, style)
+        out = self.conv1(out)
+        out = self.style2(out, style)
+        out = self.conv2(out)
+        return out
+
+
+class UpSkipAdaBlock(nn.Module):
+
+    def __init__(self, style_dim, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(UpSkipAdaBlock, self).__init__()
 
         self.style1 = AdaIN(style_dim, in_dim)
         self.style2 = AdaIN(style_dim, out_dim)
@@ -165,10 +210,7 @@ class UpAdaBlock(nn.Module):
 
     def forward(self, x1, x2, style):
         x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
-        if x2 is not None:
-            x = torch.cat([x1, x2], dim=1)
-        else:
-            x = x1
+        x = torch.cat([x1, x2], dim=1)
 
         out = self.style1(x, style)
         out = self.conv1(out)

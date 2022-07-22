@@ -24,6 +24,18 @@ class ClsLoss(nn.Module):
         return self.loss(prediction, target) * self.weight
 
 
+class CharbonnierLoss(nn.Module):
+
+    def __init__(self, eps=1e-3):
+        super(CharbonnierLoss, self).__init__()
+        self.eps2 = eps ** 2
+
+    def forward(self, x, y):
+        diff2 = (x - y) ** 2
+        loss = torch.sqrt(diff2 + self.eps2).mean()
+        return loss
+
+
 class RecLoss(nn.Module):
 
     def __init__(self, mode, weight=1.0):
@@ -38,6 +50,8 @@ class RecLoss(nn.Module):
             self.loss = nn.L1Loss()
         elif mode == 'smae':
             self.loss = nn.SmoothL1Loss()
+        elif mode == 'charb':
+            self.loss = CharbonnierLoss(eps=1e-3)
         elif mode == 'lpips':
             self.loss = lpips.LPIPS(net='alex')
         else:
@@ -91,6 +105,8 @@ class MSGANLoss(nn.Module):
 
         if mode == 'lsgan':
             pass
+        elif mode == 'charb':
+            self.charb_loss = CharbonnierLoss(eps=1e-3)
         elif mode == 'original':
             pass
         elif mode == 'wgan':
@@ -120,6 +136,9 @@ class MSGANLoss(nn.Module):
         elif self.mode == 'lsgan':
             target_tensor = self.get_target_tensor(input, target_is_real)
             return F.mse_loss(input, target_tensor)
+        elif self.mode == 'charb':
+            target_tensor = self.get_target_tensor(input, target_is_real)
+            return self.charb_loss(input, target_tensor)
         elif self.mode == 'hinge':
             if for_D:
                 if target_is_real:

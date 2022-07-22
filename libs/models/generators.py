@@ -14,6 +14,8 @@ def define_G(configs):
         net = ResnetAdaGenerator(**configs.params)
     elif configs.name == 'resnet_ada_l_nblocks':
         net = ResnetAdaLGenerator(**configs.params)
+    elif configs.name == 'resnet_ada_h_nblocks':
+        net = ResnetAdaHGenerator(**configs.params)
     elif configs.name == 'unet':
         net = smp.Unet(**configs.params)
     elif configs.name == 'unet++':
@@ -246,12 +248,10 @@ class ResnetAdaLGenerator(nn.Module):
     def forward(self, x):
 
         out = self.inconv(x)
-        enc_list = [out]
 
         for i in range(self.n_enc1):
             layer = getattr(self, f'encoder1_{i + 1}')
             out = layer(out)
-            enc_list = [out] + enc_list
 
         style = self.encoder2(out)
         level = self.cls_head(style)
@@ -260,18 +260,18 @@ class ResnetAdaLGenerator(nn.Module):
 
         for i in range(self.n_enc1):
             layer = getattr(self, f'decoder2_{i + 1}')
-            out = layer(out, None)
+            out = layer(out)
 
         out = self.outconv(out)
         return out, level
 
 
-class UnetAdaGenerator(nn.Module):
+class ResnetAdaHGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
                  last_ks=3):
-        super(UnetAdaGenerator, self).__init__()
+        super(ResnetAdaHGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
         if type(norm_layer) == functools.partial:
@@ -327,15 +327,94 @@ class UnetAdaGenerator(nn.Module):
         self.decoder1 = nn.Sequential(*decoder1)
 
         for i in range(self.n_enc1):
-            # if i < self.n_enc1 - 1:
-            in_dims  = enc1_dims[i] + enc1_dims[i + 1]
+            in_dims  = enc1_dims[i]
             out_dims = enc1_dims[i + 1]
-            # else:
-            #     in_dims  = enc1_dims[i]
-            #     out_dims = enc1_dims[i + 1]
             setattr(
                 self, f'decoder2_{i + 1}',
                 UpAdaBlock(style_dims, in_dims, out_dims, norm_layer, dropout, use_bias)
+            )
+
+        self.outconv = nn.Sequential(
+            nn.Conv2d(ngf, output_nc, kernel_size=last_ks, padding=last_ks // 2),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+
+        out = self.inconv(x)
+
+        for i in range(self.n_enc1):
+            layer = getattr(self, f'encoder1_{i + 1}')
+            out = layer(out)
+
+        style = self.encoder2(out)
+        level = self.cls_head(style)
+
+        out, _ = self.decoder1([out, style])
+
+        for i in range(self.n_enc1):
+            layer = getattr(self, f'decoder2_{i + 1}')
+            out = layer(out, style)
+
+        out = self.outconv(out)
+        return out, level
+
+
+class UnetAdaGenerator(nn.Module):
+
+    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=5,
+                 ngf=32, norm_type='none', dropout=0.0, last_ks=3):
+        super(UnetAdaGenerator, self).__init__()
+        n_enc1 = max(min(n_enc1, 5), 3)  # n_enc1: [3, 4, 5]
+
+        norm_layer = get_norm_layer(norm_type=norm_type)
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        self.inconv = nn.Sequential(
+            nn.Conv2d(input_nc, ngf, kernel_size=7, padding=3, bias=use_bias),
+            norm_layer(ngf),
+            nn.LeakyReLU(0.2, True)
+        )
+
+        enc1_dims = [ngf]
+        self.n_enc1 = n_enc1
+        for i in range(self.n_enc1):
+            mult     = 2 ** i
+            in_dims  = min(ngf * mult, 512)
+            out_dims = min(ngf * mult * 2, 512)
+            enc1_dims = [out_dims] + enc1_dims
+            setattr(
+                self, f'encoder1_{i + 1}',
+                DownBlock(in_dims, out_dims, norm_layer, dropout, use_bias)
+            )
+
+        encoder2 = []
+        style_dims = out_dims
+        n_enc2 = 7 - n_enc1
+        for i in range(n_enc2):
+            encoder2 += [
+                nn.Conv2d(style_dims, style_dims, kernel_size=3, stride=2, padding=1, bias=use_bias),
+                norm_layer(style_dims),
+                nn.LeakyReLU(0.2, True)
+            ]
+        encoder2 += [nn.AdaptiveAvgPool2d(1), nn.Flatten(1)]
+        self.encoder2 = nn.Sequential(*encoder2)
+
+        cls_head = []
+        if dropout > 0:
+            cls_head += [nn.Dropout(dropout)]
+        cls_head += [nn.Linear(style_dims, n_classes)]
+        self.cls_head = nn.Sequential(*cls_head)
+
+        for i in range(self.n_enc1):
+            in_dims  = enc1_dims[i] + enc1_dims[i + 1]
+            out_dims = enc1_dims[i + 1]
+            setattr(
+                self, f'decoder2_{i + 1}',
+                UpSkipAdaBlock(style_dims, in_dims, out_dims, norm_layer, dropout, use_bias)
             )
 
         self.outconv = nn.Sequential(
@@ -356,14 +435,9 @@ class UnetAdaGenerator(nn.Module):
         style = self.encoder2(out)
         level = self.cls_head(style)
 
-        out, _ = self.decoder1([out, style])
-
         for i in range(self.n_enc1):
             x1 = out
-            # if i < self.n_enc1 - 1:
             x2 = enc_list[i + 1]
-            # else:
-            #     x2 = None
             layer = getattr(self, f'decoder2_{i + 1}')
             out = layer(x1, x2, style)
 

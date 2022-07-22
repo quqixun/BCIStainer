@@ -18,7 +18,7 @@ G:
     output_nc: 3
     n_classes: 4
     n_enc1:    3
-    n_blocks:  6
+    n_blocks:  9
     ngf:       32
     norm_type: batch
     dropout:   0.2
@@ -28,11 +28,12 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_nc:  6
     ndf:       64
     n_layers:  3
+    num_D:     3
     norm_type: batch
   init:
     init_type: normal
@@ -43,13 +44,13 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   lsgan
+    mode:   charb
     weight: 1.0
 
 optimizer:

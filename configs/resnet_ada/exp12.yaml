@@ -1,27 +1,27 @@
 ---
 
 
-exp:  unet_ada_exp1
+exp:  resnet_ada_exp12
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 4
+  train_batch: 8
   val_batch:   1
   num_workers: 20
   pin_memory:  True
 
 G:
-  name: unet_ada
+  name: resnet_ada_nblocks
   params:
     input_nc:  3
     output_nc: 3
     n_classes: 4
-    n_enc1:    4
+    n_enc1:    3
+    n_blocks:  9
     ngf:       32
     norm_type: batch
     dropout:   0.2
-    last_ks:   7
   init:
     init_type: normal
     init_gain: 0.02
@@ -42,13 +42,13 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   charb
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   charb
+    mode:   lsgan
     weight: 1.0
 
 optimizer:

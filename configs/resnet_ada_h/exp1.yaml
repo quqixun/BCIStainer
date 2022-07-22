@@ -1,7 +1,7 @@
 ---
 
 
-exp:  unet_ada_exp1
+exp:  resnet_ada_h_exp1
 seed: 42
 
 loader:
@@ -12,12 +12,13 @@ loader:
   pin_memory:  True
 
 G:
-  name: unet_ada
+  name: resnet_ada_h_nblocks
   params:
     input_nc:  3
     output_nc: 3
     n_classes: 4
-    n_enc1:    4
+    n_enc1:    3
+    n_blocks:  9
     ngf:       32
     norm_type: batch
     dropout:   0.2
@@ -65,7 +66,6 @@ scheduler:
 trainer:
   epochs:     100
   accum_iter: 1
-  diffaug:    true
   ckpt_freq:  1000
   print_freq: 100
 

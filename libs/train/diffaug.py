@@ -3,13 +3,15 @@
 # https://arxiv.org/pdf/2006.10738
 
 import torch
-import random
+import warnings
 import torch.nn.functional as F
 
-from kornia.filters import gaussian_blur2d
+
+warnings.filterwarnings('ignore')
 
 
-def DiffAugment(x, policy='', channels_first=True):
+def DiffAugment(x, policy=['color', 'translation', 'cutout'],
+                channels_first=True):
 
     if policy:
         if not channels_first:
@@ -73,41 +75,8 @@ def rand_cutout(x, ratio=0.25):
     return x
 
 
-def rand_gusblur(x):
-    ks = random.choice([3, 5, 7, 9, 11, 13, 15, 17, 19])
-    s = ks / 2.0
-    x = gaussian_blur2d(x, (ks, ks), (s, s))
-    return x
-
-
-def rand_cutout_gusblur(x, ratio=0.5):
-    cutout_size = int(x.size(2) * ratio + 0.5), int(x.size(3) * ratio + 0.5)
-    offset_x = torch.randint(0, x.size(2) + (1 - cutout_size[0] % 2), size=[x.size(0), 1, 1], device=x.device)
-    offset_y = torch.randint(0, x.size(3) + (1 - cutout_size[1] % 2), size=[x.size(0), 1, 1], device=x.device)
-    grid_batch, grid_x, grid_y = torch.meshgrid(
-        torch.arange(x.size(0), dtype=torch.long, device=x.device),
-        torch.arange(cutout_size[0], dtype=torch.long, device=x.device),
-        torch.arange(cutout_size[1], dtype=torch.long, device=x.device),
-    )
-    grid_x = torch.clamp(grid_x + offset_x - cutout_size[0] // 2, min=0, max=x.size(2) - 1)
-    grid_y = torch.clamp(grid_y + offset_y - cutout_size[1] // 2, min=0, max=x.size(3) - 1)
-    mask = torch.zeros(x.size(0), x.size(2), x.size(3), dtype=x.dtype, device=x.device)
-    mask[grid_batch, grid_x, grid_y] = 1
-    mask = mask.unsqueeze(1)
-
-    ks = random.choice([3, 5, 7, 9, 11, 13, 15, 17, 19])
-    s = ks / 2.0
-    x_ = gaussian_blur2d(x, (ks, ks), (s, s))
-    mask_ = gaussian_blur2d(mask, (ks, ks), (s, s))
-
-    x = x * (1 - mask_) + x_ * mask_
-    return x
-
-
 AUGMENT_FNS = {
     'color': [rand_brightness, rand_saturation, rand_contrast],
     'translation': [rand_translation],
     'cutout': [rand_cutout],
-    'cutout_gusblur': [rand_cutout_gusblur],
-    'gusblur': [rand_gusblur]
 }

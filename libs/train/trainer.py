@@ -1,11 +1,10 @@
 import time
 import torch
 import datetime
-import numpy as np
-import matplotlib.pyplot as plt
 
 from .logger import *
 from .base import BCIBaseTrainer
+from .diffaug import DiffAugment
 
 
 class BCITrainer(BCIBaseTrainer):
@@ -16,7 +15,7 @@ class BCITrainer(BCIBaseTrainer):
     def forward(self, train_loader, val_loader):
 
         best_val_psnr = 0.0
-        best_val_ssim = 0.0
+        # best_val_ssim = 0.0
         start_time = time.time()
 
         for epoch in range(self.start_epoch, self.epochs):
@@ -35,21 +34,21 @@ class BCITrainer(BCIBaseTrainer):
                 best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
 
             # save model with best val ssim
-            if val_metrics['ssim'] > best_val_ssim:
-                best_val_ssim = val_metrics['ssim']
-                self._save_model('best_ssim')
-                print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
-                best_ssim_msg = f'- Best SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
+            # if val_metrics['ssim'] > best_val_ssim:
+            #     best_val_ssim = val_metrics['ssim']
+            #     self._save_model('best_ssim')
+            #     print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
+            #     best_ssim_msg = f'- Best SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
 
             # save latest model
-            self._save_model('latest')
+            # self._save_model('latest')
 
             # write logs
             self._save_logs(epoch, train_metrics, val_metrics)
             print()
 
         print(best_psnr_msg)
-        print(best_ssim_msg)
+        # print(best_ssim_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -146,11 +145,15 @@ class BCITrainer(BCIBaseTrainer):
 
         # fake
         fake = torch.cat((he, ihc_pred), 1)
+        if self.diffaug:
+            fake = DiffAugment(fake)
         pred_fake = self.D(fake.detach())
         D_fake = self.gan_loss(pred_fake, False, for_D=True)
 
         # real
         real = torch.cat((he, ihc), 1)
+        if self.diffaug:
+            real = DiffAugment(real)
         pred_real = self.D(real)
         D_real = self.gan_loss(pred_real, True, for_D=True)
 
@@ -160,6 +163,9 @@ class BCITrainer(BCIBaseTrainer):
 
         # gan loss
         fake = torch.cat((he, ihc_pred), 1)
+        if self.diffaug:
+            fake = DiffAugment(fake)
+
         pred_fake = self.D(fake)
         G_gan = self.gan_loss(pred_fake, True, for_D=False)
 

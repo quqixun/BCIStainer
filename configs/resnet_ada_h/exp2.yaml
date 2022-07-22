@@ -1,18 +1,18 @@
 ---
 
 
-exp:  resnet_ada_l_exp3
+exp:  resnet_ada_h_exp2
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 4
   val_batch:   1
   num_workers: 20
   pin_memory:  True
 
 G:
-  name: resnet_ada_l_nblocks
+  name: resnet_ada_h_nblocks
   params:
     input_nc:  3
     output_nc: 3
@@ -21,18 +21,19 @@ G:
     n_blocks:  9
     ngf:       32
     norm_type: batch
-    dropout:   0.0
+    dropout:   0.2
     last_ks:   7
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_nc:  6
     ndf:       64
     n_layers:  3
+    num_D:     3
     norm_type: batch
   init:
     init_type: normal
@@ -43,13 +44,13 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   lsgan
+    mode:   charb
     weight: 1.0
 
 optimizer:
