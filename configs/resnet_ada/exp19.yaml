@@ -55,12 +55,12 @@ loss:
 optimizer:
   name: Adam
   params:
-    lr:           0.0001
+    lr:           0.0003
     betas:        [0.5, 0.9]
     weight_decay: 0.0
 
 scheduler:
-  min_lr: 0.0001
+  min_lr: 0.0003
   warmup: 0
 
 trainer:
