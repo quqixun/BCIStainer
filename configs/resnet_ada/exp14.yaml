@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_exp13
+exp:  resnet_ada_exp14
 seed: 42
 
 loader:
@@ -64,7 +64,7 @@ scheduler:
 
 trainer:
   epochs:     100
-  accum_iter: 4
+  accum_iter: 1
   diffaug:    true
   ckpt_freq:  1000
   print_freq: 100
