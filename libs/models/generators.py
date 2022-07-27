@@ -85,7 +85,7 @@ class ResnetAdaGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
-                 last_ks=3):
+                 last_ks=3, lowres=False):
         super(ResnetAdaGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -142,6 +142,13 @@ class ResnetAdaGenerator(nn.Module):
             ]
         self.decoder1 = nn.Sequential(*decoder1)
 
+        self.lowres = lowres
+        if self.lowres:
+            self.lowdec = nn.Sequential(
+                nn.Conv2d(conv_dims, 3, kernel_size=3, padding=1),
+                nn.Tanh()
+            )
+
         decoder2 = []
         for i in range(enc1_downsampling):
             mult = 2 ** (enc1_downsampling - i)
@@ -169,7 +176,11 @@ class ResnetAdaGenerator(nn.Module):
         dec1, _ = self.decoder1([enc1, style])
         out = self.decoder2(dec1)
 
-        return out, level
+        if self.lowres:
+            out_low = self.lowdec(dec1)
+            return out, out_low, level
+        else:
+            return out, level
 
 
 class ResnetAdaLGenerator(nn.Module):
