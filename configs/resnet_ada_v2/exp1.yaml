@@ -1,15 +1,15 @@
 ---
 
 
-exp:  resnet_ada_exp22
+exp:  resnet_ada_v2_exp1
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 2
   val_batch:   1
   num_workers: 20
-  pin_memory:  True
+  pin_memory:  true
 
 G:
   name: resnet_ada_nblocks
@@ -23,6 +23,7 @@ G:
     norm_type: batch
     dropout:   0.2
     last_ks:   7
+    lowres:    true
   init:
     init_type: normal
     init_gain: 0.02
@@ -43,19 +44,19 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   charb
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   charb
+    mode:   lsgan
     weight: 1.0
 
 optimizer:
   name: AdamW
   params:
-    lr:           0.0001
+    lr:           0.001
     betas:        [0.5, 0.9]
     weight_decay: 0.05
 
@@ -66,7 +67,8 @@ scheduler:
 trainer:
   epochs:     100
   accum_iter: 1
-  diffaug:    true
+  diffaug:    false
+  ema:        true
   ckpt_freq:  1000
   print_freq: 100
 

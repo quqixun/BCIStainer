@@ -20,7 +20,7 @@ G:
     n_enc1:    3
     n_blocks:  9
     ngf:       32
-    norm_type: instance
+    norm_type: batch
     dropout:   0.2
     last_ks:   7
   init:
@@ -31,7 +31,7 @@ D:
   name: patch_gan
   params:
     input_nc:  6
-    ndf:       32
+    ndf:       64
     n_layers:  3
     norm_type: batch
   init:
@@ -43,28 +43,30 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   charb
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   charb
+    mode:   lsgan
     weight: 1.0
 
 optimizer:
-  name: SGD
+  name: AdamW
   params:
-    lr:           0.0003
-    weight_decay: 0.0
+    lr:           0.0001
+    betas:        [0.5, 0.9]
+    weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0003
-  warmup: 0
+  min_lr: 0.0
+  warmup: 20
 
 trainer:
   epochs:     100
   accum_iter: 1
+  diffaug:    true
   ckpt_freq:  1000
   print_freq: 100
 

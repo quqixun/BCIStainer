@@ -17,10 +17,10 @@ G:
     input_nc:  3
     output_nc: 3
     n_classes: 4
-    n_enc1:    3
+    n_enc1:    4
     n_blocks:  9
     ngf:       32
-    norm_type: instance
+    norm_type: batch
     dropout:   0.2
     last_ks:   7
   init:
@@ -53,18 +53,20 @@ loss:
     weight: 1.0
 
 optimizer:
-  name: SGD
+  name: AdamW
   params:
-    lr:           0.0003
-    weight_decay: 0.0
+    lr:           0.001
+    betas:        [0.5, 0.9]
+    weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0003
-  warmup: 0
+  min_lr: 0.0
+  warmup: 20
 
 trainer:
   epochs:     100
   accum_iter: 1
+  diffaug:    true
   ckpt_freq:  1000
   print_freq: 100
 
