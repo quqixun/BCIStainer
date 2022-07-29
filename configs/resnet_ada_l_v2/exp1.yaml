@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_v2_exp1
+exp:  resnet_ada_l_v2_exp1
 seed: 42
 
 loader:
@@ -9,10 +9,10 @@ loader:
   train_batch: 8
   val_batch:   1
   num_workers: 20
-  pin_memory:  true
+  pin_memory:  True
 
 G:
-  name: resnet_ada_nblocks
+  name: resnet_ada_l_nblocks
   params:
     input_nc:  3
     output_nc: 3
@@ -23,7 +23,7 @@ G:
     norm_type: batch
     dropout:   0.2
     last_ks:   7
-    lowres:    true
+    lowres:    True
   init:
     init_type: normal
     init_gain: 0.02
@@ -62,12 +62,12 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 20
+  warmup: 30
 
 trainer:
   epochs:     100
   accum_iter: 1
-  diffaug:    false
+  diff_aug:   false
   ema:        false
   ckpt_freq:  1000
   print_freq: 100

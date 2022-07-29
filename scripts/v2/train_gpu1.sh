@@ -2,9 +2,10 @@
 
 
 config_file_list=(
-    ./configs/resnet_ada/exp20.yaml
-    ./configs/resnet_ada/exp21.yaml
-    ./configs/resnet_ada/exp22.yaml
+    ./configs/resnet_ada_l_v2/exp1.yaml
+    ./configs/resnet_ada_l_v2/exp2.yaml
+    ./configs/resnet_ada_h_v2/exp1.yaml
+    ./configs/resnet_ada_h_v2/exp2.yaml
 )
 
 
@@ -12,7 +13,7 @@ for config_file in ${config_file_list[@]}; do
     # echo $config_file
 
     CUDA_VISIBLE_DEVICES=1                    \
-    python train_v2.py                           \
+    python train_v2.py                        \
         --train_dir   ./data/train            \
         --val_dir     ./data/val              \
         --exp_root    ./experiments           \

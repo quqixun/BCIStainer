@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_v2_exp1
+exp:  resnet_ada_v2_exp4
 seed: 42
 
 loader:
@@ -68,7 +68,7 @@ trainer:
   epochs:     100
   accum_iter: 1
   diffaug:    false
-  ema:        false
+  ema:        true
   ckpt_freq:  1000
   print_freq: 100
 

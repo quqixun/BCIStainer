@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_v2_exp1
+exp:  resnet_ada_v2_exp2
 seed: 42
 
 loader:
@@ -62,7 +62,7 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 20
+  warmup: 30
 
 trainer:
   epochs:     100

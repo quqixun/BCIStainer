@@ -11,3 +11,4 @@ opencv-python
 pandas
 piqa
 lpips
+git+https://github.com/lucidrains/ema-pytorch.git

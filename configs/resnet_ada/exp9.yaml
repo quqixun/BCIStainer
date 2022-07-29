@@ -43,7 +43,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim

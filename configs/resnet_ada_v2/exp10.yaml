@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_v2_exp1
+exp:  resnet_ada_v2_exp10
 seed: 42
 
 loader:
@@ -29,11 +29,12 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_nc:  6
     ndf:       64
     n_layers:  3
+    num_D:     3
     norm_type: batch
   init:
     init_type: normal
@@ -61,8 +62,8 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0
-  warmup: 20
+  min_lr: 0.00001
+  warmup: 30
 
 trainer:
   epochs:     100

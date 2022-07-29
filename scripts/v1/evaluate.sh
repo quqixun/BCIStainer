@@ -42,6 +42,12 @@ config_file_list=(
     ./configs/resnet_ada/exp14.yaml
     ./configs/resnet_ada/exp15.yaml
     ./configs/resnet_ada/exp16.yaml
+    ./configs/resnet_ada/exp17.yaml
+    ./configs/resnet_ada/exp18.yaml
+    ./configs/resnet_ada/exp19.yaml
+    ./configs/resnet_ada/exp20.yaml
+    ./configs/resnet_ada/exp21.yaml
+    ./configs/resnet_ada/exp22.yaml
     ./configs/resnet_ada_l/exp1.yaml
     ./configs/resnet_ada_l/exp2.yaml
     ./configs/resnet_ada_h/exp1.yaml
