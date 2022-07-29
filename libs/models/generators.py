@@ -187,7 +187,7 @@ class ResnetAdaLGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
-                 last_ks=3):
+                 last_ks=3, lowres=False):
         super(ResnetAdaLGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -243,6 +243,13 @@ class ResnetAdaLGenerator(nn.Module):
             ]
         self.decoder1 = nn.Sequential(*decoder1)
 
+        self.lowres = lowres
+        if self.lowres:
+            self.lowdec = nn.Sequential(
+                nn.Conv2d(conv_dims, 3, kernel_size=3, padding=1),
+                nn.Tanh()
+            )
+
         for i in range(self.n_enc1):
             in_dims  = enc1_dims[i]
             out_dims = enc1_dims[i + 1]
@@ -268,20 +275,26 @@ class ResnetAdaLGenerator(nn.Module):
         level = self.cls_head(style)
 
         out, _ = self.decoder1([out, style])
+        if self.lowres:
+            out_low = self.lowdec(out)
 
         for i in range(self.n_enc1):
             layer = getattr(self, f'decoder2_{i + 1}')
             out = layer(out)
 
         out = self.outconv(out)
-        return out, level
+
+        if self.lowres:
+            return out, out_low, level
+        else:
+            return out, level
 
 
 class ResnetAdaHGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
-                 last_ks=3):
+                 last_ks=3, lowres=False):
         super(ResnetAdaHGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -337,6 +350,13 @@ class ResnetAdaHGenerator(nn.Module):
             ]
         self.decoder1 = nn.Sequential(*decoder1)
 
+        self.lowres = lowres
+        if self.lowres:
+            self.lowdec = nn.Sequential(
+                nn.Conv2d(conv_dims, 3, kernel_size=3, padding=1),
+                nn.Tanh()
+            )
+
         for i in range(self.n_enc1):
             in_dims  = enc1_dims[i]
             out_dims = enc1_dims[i + 1]
@@ -362,13 +382,19 @@ class ResnetAdaHGenerator(nn.Module):
         level = self.cls_head(style)
 
         out, _ = self.decoder1([out, style])
+        if self.lowres:
+            out_low = self.lowdec(out)
 
         for i in range(self.n_enc1):
             layer = getattr(self, f'decoder2_{i + 1}')
             out = layer(out, style)
 
         out = self.outconv(out)
-        return out, level
+
+        if self.lowres:
+            return out, out_low, level
+        else:
+            return out, level
 
 
 class UnetAdaGenerator(nn.Module):

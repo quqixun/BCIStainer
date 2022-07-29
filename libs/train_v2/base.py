@@ -62,9 +62,9 @@ class BCIBaseTrainer(object):
         if self.ema:
             self.Gema = EMA(
                 self.G,
-                beta=0.9999,
+                beta=0.99,
                 update_after_step=100,
-                update_every=10,
+                update_every=1,
                 power=1.0
             )
 
@@ -124,6 +124,9 @@ class BCIBaseTrainer(object):
             self.G.load_state_dict(checkpoint['G'])
             self.D_opt.load_state_dict(checkpoint['D_opt'])
             self.G_opt.load_state_dict(checkpoint['G_opt'])
+            if self.ema:
+                self.Gema.load_state_dict(checkpoint['Gema'])
+
         except Exception:
             print('Faild to resume checkpoint')
 
@@ -141,15 +144,17 @@ class BCIBaseTrainer(object):
             'D_opt': self.D_opt.state_dict(),
             'G_opt': self.G_opt.state_dict(),
         }
+        if self.ema:
+            ckpt['Gema'] = self.Gema.state_dict()
 
         torch.save(ckpt, ckpt_path)
 
         return
 
-    def _save_model(self, model_name):
+    def _save_model(self, model, model_name):
 
         model_path = os.path.join(self.exp_dir, f'model_{model_name}.pth')
-        torch.save(self.G.state_dict(), model_path)
+        torch.save(model.state_dict(), model_path)
 
         return
 
@@ -168,7 +173,7 @@ class BCIBaseTrainer(object):
     def _adjust_learning_rate(self, epoch):
 
         if epoch < self.warmup:
-            lr = self.opt_params.lr * epoch / self.warmup 
+            lr = self.opt_params.lr * epoch / self.warmup
         else:
             after_warmup = self.epochs - self.warmup
             epoch_ratio = (epoch - self.warmup) / after_warmup

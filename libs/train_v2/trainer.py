@@ -20,18 +20,19 @@ class BCITrainer(BCIBaseTrainer):
 
         for epoch in range(self.start_epoch, self.epochs):
             train_metrics = self._train_epoch(train_loader, epoch)
-            val_metrics   = self._val_epoch(val_loader, epoch)
+
+            # save model with best val psnr
+            val_model = self.Gema if self.ema else self.G
+            val_metrics = self._val_epoch(val_model, val_loader, epoch)
+            if val_metrics['psnr'] > best_val_psnr:
+                best_val_psnr = val_metrics['psnr']
+                self._save_model(val_model, 'best_psnr')
+                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
+                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
                 self._save_checkpoint(epoch)
-
-            # save model with best val psnr
-            if val_metrics['psnr'] > best_val_psnr:
-                best_val_psnr = val_metrics['psnr']
-                self._save_model('best_psnr')
-                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
 
             # write logs
             self._save_logs(epoch, train_metrics, val_metrics)
@@ -114,9 +115,8 @@ class BCITrainer(BCIBaseTrainer):
         return {k: meter.global_avg for k, meter in logger.meters.items()}
 
     @torch.no_grad()
-    def _val_epoch(self, loader, epoch):
+    def _val_epoch(self, val_model, loader, epoch):
 
-        val_model = self.Gema if self.ema else self.G
         val_model.eval()
 
         header = ' Val  Epoch:[{}]'.format(epoch)

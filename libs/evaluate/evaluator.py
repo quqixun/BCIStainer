@@ -87,11 +87,17 @@ class BCIEvaluator(object):
         he = he.transpose(2, 0, 1).astype(np.float32)[None, ...]
         he = torch.Tensor(he).to(self.device)
 
+        # try:
+        #     ihc_pred, cls_pred = self.G(he)
+        # except:
+        #     ihc_pred = self.G(he)
+        #     cls_pred = None
+
         try:
-            ihc_pred, cls_pred = self.G(he)
+            multi_outputs = self.G(he)
+            ihc_pred = multi_outputs[0]
         except:
             ihc_pred = self.G(he)
-            cls_pred = None
 
         ihc_pred = ihc_pred[0].cpu().numpy()
         ihc_pred = ihc_pred.transpose(1, 2, 0)
@@ -123,10 +129,10 @@ class BCIEvaluator(object):
             he = torch.Tensor(he).to(self.device)
 
             try:
-                ihc_pred, cls_pred = self.G(he)
+                multi_outputs = self.G(he)
+                ihc_pred = multi_outputs[0]
             except:
                 ihc_pred = self.G(he)
-                cls_pred = None
 
             ihc_pred = ihc_pred[0].cpu().numpy()
             ihc_pred = ihc_pred.transpose(1, 2, 0)
