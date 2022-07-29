@@ -1,18 +1,18 @@
 ---
 
 
-exp:  resnet_ada_exp9
+exp:  resnet_ada_h_exp1
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 4
   val_batch:   1
   num_workers: 20
   pin_memory:  True
 
 G:
-  name: resnet_ada_nblocks
+  name: resnet_ada_h_nblocks
   params:
     input_nc:  3
     output_nc: 3
@@ -49,7 +49,7 @@ loss:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   lsgan
+    mode:   charb
     weight: 1.0
 
 optimizer:

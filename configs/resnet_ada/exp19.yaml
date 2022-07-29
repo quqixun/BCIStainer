@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_exp9
+exp:  resnet_ada_exp19
 seed: 42
 
 loader:
@@ -17,7 +17,7 @@ G:
     input_nc:  3
     output_nc: 3
     n_classes: 4
-    n_enc1:    3
+    n_enc1:    4
     n_blocks:  9
     ngf:       32
     norm_type: batch
@@ -43,7 +43,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   charb
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
@@ -66,6 +66,7 @@ scheduler:
 trainer:
   epochs:     100
   accum_iter: 1
+  diffaug:    true
   ckpt_freq:  1000
   print_freq: 100
 

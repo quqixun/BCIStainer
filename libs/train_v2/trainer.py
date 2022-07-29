@@ -1,6 +1,7 @@
 import time
 import torch
 import datetime
+import torch.nn.functional as F
 
 from .logger import *
 from .base import BCIBaseTrainer
@@ -15,40 +16,29 @@ class BCITrainer(BCIBaseTrainer):
     def forward(self, train_loader, val_loader):
 
         best_val_psnr = 0.0
-        # best_val_ssim = 0.0
         start_time = time.time()
 
         for epoch in range(self.start_epoch, self.epochs):
             train_metrics = self._train_epoch(train_loader, epoch)
-            val_metrics   = self._val_epoch(val_loader, epoch)
+
+            # save model with best val psnr
+            val_model = self.Gema if self.ema else self.G
+            val_metrics = self._val_epoch(val_model, val_loader, epoch)
+            if val_metrics['psnr'] > best_val_psnr:
+                best_val_psnr = val_metrics['psnr']
+                self._save_model(val_model, 'best_psnr')
+                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
+                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
                 self._save_checkpoint(epoch)
-
-            # save model with best val psnr
-            if val_metrics['psnr'] > best_val_psnr:
-                best_val_psnr = val_metrics['psnr']
-                self._save_model('best_psnr')
-                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
-
-            # save model with best val ssim
-            # if val_metrics['ssim'] > best_val_ssim:
-            #     best_val_ssim = val_metrics['ssim']
-            #     self._save_model('best_ssim')
-            #     print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
-            #     best_ssim_msg = f'- Best SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
-
-            # save latest model
-            # self._save_model('latest')
 
             # write logs
             self._save_logs(epoch, train_metrics, val_metrics)
             print()
 
         print(best_psnr_msg)
-        # print(best_ssim_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -77,10 +67,16 @@ class BCITrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
 
             try:
-                ihc_pred, level_pred = self.G(he)
+                multi_outputs = self.G(he)
+                if len(multi_outputs) == 2:
+                    ihc_pred, level_pred = multi_outputs
+                    ihc_pred_low = None
+                elif len(multi_outputs) == 3:
+                    ihc_pred, ihc_pred_low, level_pred = multi_outputs
             except:
                 ihc_pred = self.G(he)
                 level_pred = None
+                ihc_pred_low = None
 
             # update D
             self._set_requires_grad(self.D, True)
@@ -92,7 +88,7 @@ class BCITrainer(BCIBaseTrainer):
 
             # update G
             self._set_requires_grad(self.D, False)
-            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_pred)
+            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_pred, ihc_pred_low)
             loss_G = G_gan + G_rec + G_sim
 
             logger.update(
@@ -113,31 +109,31 @@ class BCITrainer(BCIBaseTrainer):
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
 
+            if self.ema:
+                self.Gema.update()
+
         return {k: meter.global_avg for k, meter in logger.meters.items()}
 
     @torch.no_grad()
-    def _val_epoch(self, loader, epoch):
-        self.G.eval()
+    def _val_epoch(self, val_model, loader, epoch):
+
+        val_model.eval()
 
         header = ' Val  Epoch:[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
 
         data_iter = logger.log_every(loader)
         for _, data in enumerate(data_iter):
-            he, ihc, level = [d.to(self.device) for d in data]
+            he, ihc, _ = [d.to(self.device) for d in data]
 
             try:
-                ihc_pred, level_pred = self.G(he)
+                multi_outputs = val_model(he)
+                ihc_pred = multi_outputs[0]
             except:
-                ihc_pred = self.G(he)
-                level_pred = None
+                ihc_pred = val_model(he)
 
             psnr, ssim = self.eval_metrics(ihc, ihc_pred)
-
-            logger.update(
-                psnr=psnr.item(),
-                ssim=ssim.item(),
-            )
+            logger.update(psnr=psnr.item(), ssim=ssim.item())
 
         return {k: meter.global_avg for k, meter in logger.meters.items()}
 
@@ -159,7 +155,7 @@ class BCITrainer(BCIBaseTrainer):
 
         return D_fake, D_real
 
-    def _G_loss(self, he, ihc, ihc_pred):
+    def _G_loss(self, he, ihc, ihc_pred, ihc_pred_low=None):
 
         # gan loss
         fake = torch.cat((he, ihc_pred), 1)
@@ -171,6 +167,11 @@ class BCITrainer(BCIBaseTrainer):
 
         # rec
         G_rec = self.rec_loss(ihc, ihc_pred)
+        if ihc_pred_low is not None:
+            _, _, h, w = ihc_pred_low.size()
+            ihc_low = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
+            G_rec_low = self.rec_loss(ihc_low, ihc_pred_low)
+            G_rec += G_rec_low * 1.0
 
         # sim
         G_sim = self.sim_loss(ihc, ihc_pred)

@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_exp9
+exp:  resnet_ada_exp21
 seed: 42
 
 loader:
@@ -43,7 +43,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   charb
+    mode:   mae
     weight: 10.0
   sim:
     mode:   ssim
@@ -55,7 +55,7 @@ loss:
 optimizer:
   name: AdamW
   params:
-    lr:           0.001
+    lr:           0.0001
     betas:        [0.5, 0.9]
     weight_decay: 0.05
 
@@ -66,6 +66,7 @@ scheduler:
 trainer:
   epochs:     100
   accum_iter: 1
+  diffaug:    false
   ckpt_freq:  1000
   print_freq: 100
 

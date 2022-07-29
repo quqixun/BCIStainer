@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_exp9
+exp:  resnet_ada_exp16
 seed: 42
 
 loader:
@@ -20,9 +20,8 @@ G:
     n_enc1:    3
     n_blocks:  9
     ngf:       32
-    norm_type: batch
+    norm_type: instance
     dropout:   0.2
-    last_ks:   7
   init:
     init_type: normal
     init_gain: 0.02
@@ -33,7 +32,7 @@ D:
     input_nc:  6
     ndf:       64
     n_layers:  3
-    norm_type: batch
+    norm_type: instance
   init:
     init_type: normal
     init_gain: 0.02
@@ -49,7 +48,7 @@ loss:
     mode:   ssim
     weight: 1.0
   gan:
-    mode:   lsgan
+    mode:   charb
     weight: 1.0
 
 optimizer:
