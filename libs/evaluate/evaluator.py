@@ -4,9 +4,9 @@ import torch
 import numpy as np
 import pandas as pd
 import imageio.v2 as iio
-import matplotlib.pyplot as plt
 
 from tqdm import tqdm
+from ema_pytorch import EMA
 from ..models import define_G
 from os.path import join as opj
 from skimage.metrics import structural_similarity
@@ -23,6 +23,7 @@ class BCIEvaluator(object):
         # model
         self.G_params = configs.G
         self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.ema      = configs.trainer.get('ema', False)
         self.norm_method = configs.loader.norm_method
 
         self._load_model(model_path)
@@ -30,6 +31,15 @@ class BCIEvaluator(object):
     def _load_model(self, model_path):
 
         self.G = define_G(self.G_params)
+        if self.ema:
+            self.G = EMA(
+                self.G,
+                beta=0.99,
+                update_after_step=100,
+                update_every=1,
+                power=1.0
+            )
+
         G_dict = torch.load(model_path, map_location='cpu')
         self.G.load_state_dict(G_dict)
         self.G = self.G.to(self.device)
@@ -87,12 +97,6 @@ class BCIEvaluator(object):
         he = he.transpose(2, 0, 1).astype(np.float32)[None, ...]
         he = torch.Tensor(he).to(self.device)
 
-        # try:
-        #     ihc_pred, cls_pred = self.G(he)
-        # except:
-        #     ihc_pred = self.G(he)
-        #     cls_pred = None
-
         try:
             multi_outputs = self.G(he)
             ihc_pred = multi_outputs[0]
@@ -105,14 +109,6 @@ class BCIEvaluator(object):
         ihc_pred = ihc_pred.astype(np.uint8)
 
         iio.imwrite(ihc_pred_path, ihc_pred)
-
-        # plt.figure(figsize=(18, 9))
-        # plt.subplot(121)
-        # plt.imshow(he_ori)
-        # plt.subplot(122)
-        # plt.imshow(ihc_pred)
-        # plt.tight_layout()
-        # plt.show()
 
         return
     
@@ -143,14 +139,6 @@ class BCIEvaluator(object):
         ihc_pred_tta /= 7
         ihc_pred_tta = ihc_pred_tta.astype(np.uint8)
         iio.imwrite(ihc_pred_path, ihc_pred_tta)
-
-        # plt.figure(figsize=(18, 9))
-        # plt.subplot(121)
-        # plt.imshow(he_ori)
-        # plt.subplot(122)
-        # plt.imshow(ihc_pred_tta)
-        # plt.tight_layout()
-        # plt.show()
 
         return
 
