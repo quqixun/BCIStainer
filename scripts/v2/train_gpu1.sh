@@ -2,10 +2,8 @@
 
 
 config_file_list=(
-    ./configs/resnet_ada_l_v2/exp1.yaml
-    ./configs/resnet_ada_l_v2/exp2.yaml
-    ./configs/resnet_ada_h_v2/exp1.yaml
-    ./configs/resnet_ada_h_v2/exp2.yaml
+    ./configs/resnet_ada_v2/exp14.yaml
+    ./configs/resnet_ada_v2/exp16.yaml
 )
 
 
