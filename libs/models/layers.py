@@ -1,5 +1,6 @@
 import math
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -217,3 +218,111 @@ class UpSkipAdaBlock(nn.Module):
         out = self.style2(out, style)
         out = self.conv2(out)
         return out
+
+
+class EqualizedWeight(nn.Module):
+
+    def __init__(self, shape):
+        super(EqualizedWeight, self).__init__()
+
+        self.c = 1 / math.sqrt(np.prod(shape[1:]))
+        self.data = nn.Parameter(torch.randn(shape))
+
+    def forward(self):
+         return self.data * self.c
+
+
+class EqualizedLinear(nn.Module):
+
+    def __init__(self, in_dim, out_dim, bias=0.0):
+        super(EqualizedLinear, self).__init__()
+
+        self.weight = EqualizedWeight([out_dim, in_dim])
+        self.bias = nn.Parameter(torch.ones(out_dim) * bias)
+
+    def forward(self, x):
+        return F.linear(x, self.weight(), bias=self.bias)
+
+
+class ModConv2D(nn.Module):
+
+    def __init__(self, in_dim, out_dim, kernel_size, demodulate=True, use_bias=True, eps=1e-8):
+        super(ModConv2D, self).__init__()
+
+        self.out_dim = out_dim
+        self.use_bias = use_bias
+        self.demodulate = demodulate
+        self.kernel_size = kernel_size
+        self.padding = kernel_size // 2
+        self.weight = EqualizedWeight([out_dim, in_dim, kernel_size, kernel_size])
+        self.eps = eps
+
+        if self.use_bias:
+            self.bias = nn.Parameter(torch.zeros(out_dim))
+
+    def forward(self, x_in):
+        x, style = x_in
+        b, _, h, w = x.shape
+
+        style_ = style[:, None, :, None, None]
+        weights = self.weight()[None, :, :, :, :]
+        weights = weights * (style_ + 1)
+
+        if self.demodulate:
+            sigma_inv = torch.rsqrt((weights ** 2).sum(dim=(2, 3, 4), keepdim=True) + self.eps)
+            weights = weights * sigma_inv
+
+        _, _, *ws = weights.shape
+        weights = weights.reshape(b * self.out_dim, *ws)
+
+        x = x.reshape(1, -1, h, w)
+        x = F.conv2d(x, weights, padding=self.padding, groups=b)
+        x = x.reshape(-1, self.out_dim, h, w)
+
+        if self.use_bias:
+            x += self.bias[None, :, None, None]
+
+        return x
+
+
+class ResnetModBlock(nn.Module):
+
+    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias):
+        super(ResnetModBlock, self).__init__()
+        assert style_dim == conv_dim
+
+        # self.style1 = Linear(style_dim, conv_dim, bias=1.0)
+        # self.style2 = Linear(style_dim, conv_dim, bias=1.0)
+
+        conv1 = [
+            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
+            norm_layer(conv_dim),
+            nn.LeakyReLU(0.2, True)
+        ]
+        if dropout > 0:
+            conv1 += [nn.Dropout(dropout)]
+        self.conv1 = nn.Sequential(*conv1)
+
+        self.conv2 = nn.Sequential(
+            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
+            norm_layer(conv_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x):
+        x_in, style = x
+        # out = self.conv1((x_in, self.style1(style)))
+        # out = self.conv2((out, self.style2(style)))
+        out = self.conv1((x_in, style))
+        out = self.conv2((out, style))
+        return (x_in + out) / math.sqrt(2), style
+
+
+if __name__ == '__main__':
+
+    x = torch.rand(2, 32, 128, 128)
+    style = torch.rand(2, 32)
+
+    m = ResnetModBlock(32, 32, nn.BatchNorm2d, 0.0, False)
+    out, _ = m((x, style))
+    print(out.size())

@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_l_v2_exp2
+exp:  resnet_ada_l_v2_exp3
 seed: 42
 
 loader:
@@ -31,8 +31,8 @@ G:
 D:
   name: patch_gan
   params:
-    input_nc:  6
-    ndf:       32
+    input_nc:  3
+    ndf:       64
     n_layers:  3
     norm_type: batch
   init:
@@ -44,7 +44,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim
@@ -61,7 +61,7 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0
+  min_lr: 0.00001
   warmup: 30
 
 trainer:

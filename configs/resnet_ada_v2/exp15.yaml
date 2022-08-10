@@ -1,7 +1,7 @@
 ---
 
 
-exp:  resnet_ada_l_v2_exp2
+exp:  resnet_ada_v2_exp15
 seed: 42
 
 loader:
@@ -9,10 +9,10 @@ loader:
   train_batch: 8
   val_batch:   1
   num_workers: 20
-  pin_memory:  True
+  pin_memory:  true
 
 G:
-  name: resnet_ada_l_nblocks
+  name: resnet_ada_nblocks
   params:
     input_nc:  3
     output_nc: 3
@@ -22,8 +22,8 @@ G:
     ngf:       32
     norm_type: batch
     dropout:   0.2
-    last_ks:   7
-    lowres:    True
+    last_ks:   1
+    lowres:    true
   init:
     init_type: normal
     init_gain: 0.02
@@ -31,7 +31,7 @@ G:
 D:
   name: patch_gan
   params:
-    input_nc:  6
+    input_nc:  3
     ndf:       32
     n_layers:  3
     norm_type: batch
@@ -61,13 +61,13 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.0
+  min_lr: 0.00001
   warmup: 30
 
 trainer:
   epochs:     100
   accum_iter: 1
-  diff_aug:   false
+  diffaug:    false
   ema:        false
   ckpt_freq:  1000
   print_freq: 100

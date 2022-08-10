@@ -23,6 +23,7 @@ class BCIBaseTrainer(object):
         self.D_params = configs.D
         self.G_params = configs.G
         self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.D_input  = 'ihc' if configs.D.params.input_nc == 3 else 'he+ihc'
 
         # loss
         self.cls_params = configs.loss.cls

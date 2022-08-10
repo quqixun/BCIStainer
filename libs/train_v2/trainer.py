@@ -140,16 +140,21 @@ class BCITrainer(BCIBaseTrainer):
     def _D_loss(self, he, ihc, ihc_pred):
 
         # fake
-        fake = torch.cat((he, ihc_pred), 1)
-        if self.diffaug:
-            fake = DiffAugment(fake)
+        fake = self._get_D_input(he, ihc_pred)
+        # if self.D_input == 'he+ihc':
+        #     fake = torch.cat((he, ihc_pred), 1)
+        # else:
+        #     fake = ihc_pred
+        # if self.diffaug:
+        #     fake = DiffAugment(fake)
         pred_fake = self.D(fake.detach())
         D_fake = self.gan_loss(pred_fake, False, for_D=True)
 
         # real
-        real = torch.cat((he, ihc), 1)
-        if self.diffaug:
-            real = DiffAugment(real)
+        real = self._get_D_input(he, ihc)
+        # real = torch.cat((he, ihc), 1)
+        # if self.diffaug:
+        #     real = DiffAugment(real)
         pred_real = self.D(real)
         D_real = self.gan_loss(pred_real, True, for_D=True)
 
@@ -158,9 +163,10 @@ class BCITrainer(BCIBaseTrainer):
     def _G_loss(self, he, ihc, ihc_pred, ihc_pred_low=None):
 
         # gan loss
-        fake = torch.cat((he, ihc_pred), 1)
-        if self.diffaug:
-            fake = DiffAugment(fake)
+        fake = self._get_D_input(he, ihc_pred)
+        # fake = torch.cat((he, ihc_pred), 1)
+        # if self.diffaug:
+        #     fake = DiffAugment(fake)
 
         pred_fake = self.D(fake)
         G_gan = self.gan_loss(pred_fake, True, for_D=False)
@@ -177,3 +183,15 @@ class BCITrainer(BCIBaseTrainer):
         G_sim = self.sim_loss(ihc, ihc_pred)
 
         return G_gan, G_rec, G_sim
+
+    def _get_D_input(self, he, ihc):
+
+        if self.D_input == 'he+ihc':
+            D_input = torch.cat((he, ihc), 1)
+        else:  # self.D_input == 'ihc
+            D_input = ihc
+        
+        if self.diffaug:
+            D_input = DiffAugment(D_input)
+
+        return D_input
