@@ -115,36 +115,70 @@ class AdainResBlk(nn.Module):
         return out / math.sqrt(2)
 
 
-class HighPass(nn.Module):
-    def __init__(self, w_hpf):
-        super(HighPass, self).__init__()
-        self.register_buffer(
-            'filter',
-            torch.tensor([[-1, -1, -1], [-1, 8., -1], [-1, -1, -1]]) / w_hpf
+class Classifier(nn.Module):
+
+    def __init__(self, input_nc=3, n_classes=4, ngf=32, cls_size=256, dropout=0.0, max_conv_dim=256):
+        super(Classifier, self).__init__()
+
+        self.cls_size = cls_size
+
+        self.inconv = nn.Sequential(
+            nn.Conv2d(input_nc, ngf, kernel_size=7, padding=3, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.LeakyReLU(0.2, True)
         )
 
+        num_layers = int(np.log2(cls_size)) - 3
+        print(num_layers)
+        layers = []
+        in_dim = ngf
+        for i in range(num_layers):
+            out_dim = min(max_conv_dim, in_dim * 2)
+            print(in_dim, out_dim)
+            layers += [
+                nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(out_dim),
+                nn.LeakyReLU(0.2, True)
+            ]
+            in_dim = out_dim
+        layers += [nn.AdaptiveAvgPool2d(1), nn.Flatten(1)]
+        self.layers = nn.Sequential(*layers)
+        self.style_dim = out_dim
+
+        cls_head = []
+        if dropout > 0:
+            cls_head += [nn.Dropout(dropout)]
+        cls_head += [nn.Linear(out_dim, n_classes)]
+        self.cls_head = nn.Sequential(*cls_head)
+
     def forward(self, x):
-        filter = self.filter.unsqueeze(0).unsqueeze(1).repeat(x.size(1), 1, 1, 1)
-        return F.conv2d(x, filter, padding=1, groups=x.size(1))
+
+        out = F.interpolate(x, size=self.cls_size, mode='bilinear', align_corners=True)
+        print(out.size())
+        out = self.inconv(out)
+        style = self.layers(out)
+        level = self.cls_head(style)
+
+        return level, style
 
 
 class StarAdaGenerator(nn.Module):
 
-    def __init__(self, style_dim=64, n_enc1=3, n_blocks=2, ngf=32):
+    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
+                 n_blocks=2, ngf=32, dropout=0.0, cls_size=256, max_conv_dim=256):
         super(StarAdaGenerator, self).__init__()
-        max_conv_dim=512
 
-        self.from_rgb = nn.Conv2d(3, ngf, 3, 1, 1)
+        self.classifier = Classifier(input_nc, n_classes, ngf, cls_size, dropout, max_conv_dim)
+        style_dim = self.classifier.style_dim
+
+        self.from_rgb = nn.Conv2d(input_nc, ngf, 3, 1, 1)
         self.encode = nn.ModuleList()
         self.decode = nn.ModuleList()
         self.to_rgb = nn.Sequential(
             nn.InstanceNorm2d(ngf, affine=True),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(ngf, 3, 1, 1, 0)
+            nn.Conv2d(ngf, output_nc, 1, 1, 0)
         )
-
-        self.classifier = None
-        style_dim = self.classifier.style_dim
 
         # down/up-sampling blocks
         repeat_num = n_enc1
@@ -163,6 +197,7 @@ class StarAdaGenerator(nn.Module):
     def forward(self, x):
 
         level, style = self.classifier(x)
+        print(level.size(), style.size())
         x = self.from_rgb(x)
         for block in self.encode:
             x = block(x)
@@ -174,11 +209,16 @@ class StarAdaGenerator(nn.Module):
 if __name__ == '__main__':
 
     x = torch.rand(1, 3, 1024, 1024).cuda()
-    style = torch.rand(1, 512).cuda()
+    # style = torch.rand(1, 512).cuda()
 
-    model = StarAdaGenerator(style_dim=512, max_conv_dim=512)
+    model = StarAdaGenerator()
     model.cuda()
     # print(model)
 
     output = model(x)
     print(output.size())
+
+    # classifier = Classifier(input_nc=3, n_classes=4, ngf=32, cls_size=256, dropout=0.0)
+    # classifier.cuda()
+    # level, style = classifier(x)
+    # print(level.size(), style.size())
