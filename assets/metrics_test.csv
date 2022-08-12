@@ -1,0 +1,7 @@
+exp,pred,metrics,psnr_avg,psnr_std,ssim_avg,ssim_std
+resnet_ada_l_v2_exp5,model_best_psnr_tta,./outputs_test/resnet_ada_l_v2_exp5/model_best_psnr_tta/metrics.csv,23.839834941196727,4.875607496453707,0.6183981804717297,0.17184510111033735
+resnet_ada_v2_exp18,model_best_psnr_tta,./outputs_test/resnet_ada_v2_exp18/model_best_psnr_tta/metrics.csv,22.95972274899052,4.935525391276402,0.55580657110913,0.19054858909673136
+resnet_mod_v2_exp3,model_best_psnr_tta,./outputs_test/resnet_mod_v2_exp3/model_best_psnr_tta/metrics.csv,22.652005770780494,5.165759348196048,0.5576096957346672,0.18486667724514652
+resnet_mod_v2_exp5,model_best_psnr_tta,./outputs_test/resnet_mod_v2_exp5/model_best_psnr_tta/metrics.csv,22.507718235236766,4.6829127654633425,0.5496129664873708,0.1793312322559983
+resnet_mod_v2_exp6,model_best_psnr_tta,./outputs_test/resnet_mod_v2_exp6/model_best_psnr_tta/metrics.csv,22.214733651012107,4.890862289008402,0.5647642458370343,0.18137706461953917
+resnet_mod_v2_exp4,model_best_psnr_tta,./outputs_test/resnet_mod_v2_exp4/model_best_psnr_tta/metrics.csv,22.168954649496627,4.766504405716658,0.5522577856016995,0.17686178688920928
