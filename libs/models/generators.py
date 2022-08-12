@@ -4,6 +4,8 @@ import segmentation_models_pytorch as smp
 
 from .utils import *
 from .layers import *
+from .starganv2_ada import StarAdaGenerator
+from .starganv2_mod import StarModGenerator
 
 
 def define_G(configs):
@@ -18,6 +20,10 @@ def define_G(configs):
         net = ResnetAdaLGenerator(**configs.params)
     elif configs.name == 'resnet_ada_h_nblocks':
         net = ResnetAdaHGenerator(**configs.params)
+    elif configs.name == 'star_ada':
+        net = StarAdaGenerator(**configs.params)
+    elif configs.name == 'star_mod':
+        net = StarModGenerator(**configs.params)
     elif configs.name == 'unet':
         net = smp.Unet(**configs.params)
     elif configs.name == 'unet++':
@@ -548,7 +554,7 @@ class ResnetModGenerator(nn.Module):
         self.lowres = lowres
         if self.lowres:
             self.lowdec = nn.Sequential(
-                nn.Conv2d(conv_dims, 3, kernel_size=3, padding=1),
+                nn.Conv2d(conv_dims, output_nc, kernel_size=3, padding=1),
                 nn.Tanh()
             )
 
