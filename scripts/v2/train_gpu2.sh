@@ -2,15 +2,15 @@
 
 
 config_file_list=(
-    ./configs/resnet_ada_v2/exp21.yaml
-    ./configs/resnet_ada_v2/exp22.yaml
+    ./configs/resnet_mod_v2/exp8.yaml
+    ./configs/resnet_mod_v2/exp9.yaml
 )
 
 
 for config_file in ${config_file_list[@]}; do
     # echo $config_file
 
-    CUDA_VISIBLE_DEVICES=0                    \
+    CUDA_VISIBLE_DEVICES=2                    \
     python train_v2.py                        \
         --train_dir   ./data/train            \
         --val_dir     ./data/val              \
