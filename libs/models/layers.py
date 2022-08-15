@@ -98,6 +98,31 @@ class ResnetAdaBlock(nn.Module):
         return (x_in + out) / math.sqrt(2), style
 
 
+class ResnetAdaBlock2(nn.Module):
+
+    def __init__(self, style_dim, conv_dim, dropout, use_bias):
+        super(ResnetAdaBlock2, self).__init__()
+
+        self.style1 = AdaIN(style_dim, conv_dim)
+        self.style2 = AdaIN(style_dim, conv_dim)
+
+        self.act = nn.LeakyReLU(0.2, True)
+        self.dropout = nn.Dropout(dropout)if dropout > 0 else None
+
+        self.conv1 = nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias)
+        self.conv2 = nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias)
+
+    def forward(self, x):
+        x_in, style = x
+        out = self.conv1(x_in)
+        out = self.style1(out, style)
+        out = self.act(out)
+        out = self.conv2(x_in)
+        out = self.style2(out, style)
+        out = self.act(out)
+        return (x_in + out) / math.sqrt(2), style
+
+
 class DownBlock(nn.Module):
 
     def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
@@ -287,12 +312,14 @@ class ModConv2D(nn.Module):
 
 class ResnetModBlock(nn.Module):
 
-    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias):
+    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias, style_layer=False):
         super(ResnetModBlock, self).__init__()
         assert style_dim == conv_dim
 
-        # self.style1 = Linear(style_dim, conv_dim, bias=1.0)
-        # self.style2 = Linear(style_dim, conv_dim, bias=1.0)
+        self.style_layer = style_layer
+        if self.style_layer:
+            self.style1 = nn.Linear(style_dim, conv_dim, bias=True)
+            self.style2 = nn.Linear(style_dim, conv_dim, bias=True)
 
         conv1 = [
             ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
@@ -311,10 +338,48 @@ class ResnetModBlock(nn.Module):
 
     def forward(self, x):
         x_in, style = x
-        # out = self.conv1((x_in, self.style1(style)))
-        # out = self.conv2((out, self.style2(style)))
-        out = self.conv1((x_in, style))
-        out = self.conv2((out, style))
+        if self.style_layer:
+            out = self.conv1((x_in, self.style1(style)))
+            out = self.conv2((out, self.style2(style)))
+        else:
+            out = self.conv1((x_in, style))
+            out = self.conv2((out, style))
+        return (x_in + out) / math.sqrt(2), style
+
+
+class ResnetModBlock2(nn.Module):
+
+    def __init__(self, style_dim, conv_dim, dropout, use_bias, style_layer=False):
+        super(ResnetModBlock2, self).__init__()
+
+        self.style_layer = style_layer
+        if self.style_layer:
+            self.style1 = nn.Linear(style_dim, conv_dim, bias=True)
+            self.style2 = nn.Linear(style_dim, conv_dim, bias=True)
+        else:
+            assert style_dim == conv_dim
+
+        conv1 = [
+            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
+            nn.LeakyReLU(0.2, True)
+        ]
+        if dropout > 0:
+            conv1 += [nn.Dropout(dropout)]
+        self.conv1 = nn.Sequential(*conv1)
+
+        self.conv2 = nn.Sequential(
+            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
+            nn.LeakyReLU(0.2, True)
+        )
+
+    def forward(self, x):
+        x_in, style = x
+        if self.style_layer:
+            out = self.conv1((x_in, self.style1(style)))
+            out = self.conv2((out, self.style2(style)))
+        else:
+            out = self.conv1((x_in, style))
+            out = self.conv2((out, style))
         return (x_in + out) / math.sqrt(2), style
 
 

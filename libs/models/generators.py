@@ -93,7 +93,7 @@ class ResnetAdaGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
-                 last_ks=3, lowres=False):
+                 last_ks=3, lowres=False, ada_block='ada_block'):
         super(ResnetAdaGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -142,12 +142,16 @@ class ResnetAdaGenerator(nn.Module):
         decoder1 = []
         conv_dims = out_dims
         for i in range(n_blocks):
-            decoder1 += [
-                ResnetAdaBlock(
+            if ada_block == 'ada_block':
+                layer = ResnetAdaBlock(
                     style_dims, conv_dims, norm_layer=norm_layer,
                     dropout=dropout, use_bias=use_bias
                 )
-            ]
+            elif ada_block == 'ada_block2':
+                layer = ResnetAdaBlock2(
+                    style_dims, conv_dims, dropout=dropout, use_bias=use_bias
+                )
+            decoder1 += [layer]
         self.decoder1 = nn.Sequential(*decoder1)
 
         self.lowres = lowres
@@ -494,7 +498,8 @@ class ResnetModGenerator(nn.Module):
 
     def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
                  n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
-                 last_ks=3, lowres=False):
+                 last_ks=3, lowres=False, mod_block='mod_block',
+                 style_layer=False):
         super(ResnetModGenerator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -543,12 +548,20 @@ class ResnetModGenerator(nn.Module):
         decoder1 = []
         conv_dims = out_dims
         for i in range(n_blocks):
-            decoder1 += [
-                ResnetModBlock(
+            if mod_block == 'mod_block':
+                layer = ResnetModBlock(
                     style_dims, conv_dims, norm_layer=norm_layer,
-                    dropout=dropout, use_bias=use_bias
+                    dropout=dropout, use_bias=use_bias,
+                    style_layer=style_layer
                 )
-            ]
+            elif mod_block == 'mod_block2':
+                layer = ResnetModBlock2(
+                    style_dims, conv_dims,
+                    dropout=dropout, use_bias=use_bias,
+                    style_layer=style_layer
+                )
+
+            decoder1 += [layer]
         self.decoder1 = nn.Sequential(*decoder1)
 
         self.lowres = lowres
