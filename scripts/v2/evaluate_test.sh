@@ -19,30 +19,19 @@ config_file_list=(
     # ./configs/resnet_ada_v2/exp18.yaml
     # ./configs/resnet_ada_v2/exp19.yaml
     # ./configs/resnet_ada_v2/exp20.yaml
-    # ./configs/resnet_ada_l_v2/exp1.yaml
-    # ./configs/resnet_ada_l_v2/exp2.yaml
-    # ./configs/resnet_ada_l_v2/exp3.yaml
-    # ./configs/resnet_ada_l_v2/exp4.yaml
-    # ./configs/resnet_ada_l_v2/exp5.yaml
-    # ./configs/resnet_ada_h_v2/exp1.yaml
-    # ./configs/resnet_ada_h_v2/exp2.yaml
-    # ./configs/resnet_ada_h_v2/exp3.yaml
-    # ./configs/resnet_ada_h_v2/exp4.yaml
-    # ./configs/resnet_ada_h_v2/exp5.yaml
+    ./configs/resnet_ada_v2/exp21.yaml
+    # ./configs/resnet_ada_v2/exp22.yaml
     # ./configs/resnet_mod_v2/exp1.yaml
     # ./configs/resnet_mod_v2/exp2.yaml
     # ./configs/resnet_mod_v2/exp3.yaml
     # ./configs/resnet_mod_v2/exp4.yaml
     # ./configs/resnet_mod_v2/exp5.yaml
     # ./configs/resnet_mod_v2/exp6.yaml
-    # ./configs/star_ada_v2/exp1.yaml
-    # ./configs/star_ada_v2/exp2.yaml
-    # ./configs/star_ada_v2/exp3.yaml
-    # ./configs/star_ada_v2/exp4.yaml
-    # ./configs/star_mod_v2/exp1.yaml
-    # ./configs/star_mod_v2/exp2.yaml
-    ./configs/star_mod_v2/exp3.yaml
-    ./configs/star_mod_v2/exp4.yaml
+    # ./configs/resnet_mod_v2/exp7.yaml
+    ./configs/resnet_mod_v2/exp8.yaml
+    # ./configs/resnet_mod_v2/exp9.yaml
+    ./configs/resnet_mod_v2/exp10.yaml
+    # ./configs/resnet_mod_v2/exp11.yaml
 )
 
 
