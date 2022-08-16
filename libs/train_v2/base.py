@@ -47,6 +47,7 @@ class BCIBaseTrainer(object):
         self.accum_iter  = configs.trainer.accum_iter
         self.diffaug     = configs.trainer.get('diffaug', False)
         self.ema         = configs.trainer.get('ema', False)
+        self.low_weigth  = configs.trainer.get('low_weigth', 1.0)
 
         self._load_model()
         self._load_losses()

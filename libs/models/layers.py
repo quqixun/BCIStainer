@@ -142,6 +142,36 @@ class DownBlock(nn.Module):
         return self.conv(x)
 
 
+class DownResBlock(nn.Module):
+
+    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(DownResBlock, self).__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout),
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+        self.conv2 = None
+        if in_dim != out_dim:
+            self.conv2 = nn.Sequential(
+                nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1, padding=0, bias=use_bias),
+                norm_layer(out_dim),
+                nn.LeakyReLU(0.2, True)
+            )
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
+        x1 = self.conv1(x)
+        x2 = self.conv2(x) if self.conv2 is not None else x
+        return (x1 + x2) / math.sqrt(2)
+
+
 class UpBlock(nn.Module):
 
     def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
@@ -160,6 +190,36 @@ class UpBlock(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
+
+class UpResBlock(nn.Module):
+
+    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
+        super(UpResBlock, self).__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True),
+            nn.Dropout(dropout),
+            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
+            norm_layer(out_dim),
+            nn.LeakyReLU(0.2, True)
+        )
+
+        self.conv2 = None
+        if in_dim != out_dim:
+            self.conv2 = nn.Sequential(
+                nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1, padding=0, bias=use_bias),
+                norm_layer(out_dim),
+                nn.LeakyReLU(0.2, True)
+            )
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x1 = self.conv1(x)
+        x2 = self.conv2(x) if self.conv2 is not None else x
+        return (x1 + x2) / math.sqrt(2)
 
 
 class UpSkipBlock(nn.Module):

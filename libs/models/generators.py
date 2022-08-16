@@ -18,6 +18,8 @@ def define_G(configs):
         net = ResnetModGenerator(**configs.params)
     elif configs.name == 'resnet_ada_l_nblocks':
         net = ResnetAdaLGenerator(**configs.params)
+    elif configs.name == 'resnet_mod_l_nblocks':
+        net = ResnetModLGenerator(**configs.params)
     elif configs.name == 'resnet_ada_h_nblocks':
         net = ResnetAdaHGenerator(**configs.params)
     elif configs.name == 'star_ada':
@@ -603,3 +605,108 @@ class ResnetModGenerator(nn.Module):
             return out, out_low, level
         else:
             return out, level
+
+
+class ResnetModLGenerator(nn.Module):
+
+    def __init__(self, input_nc=3, output_nc=3, n_classes=4, n_enc1=3,
+                 n_blocks=9, ngf=32, norm_type='none', dropout=0.0,
+                 last_ks=3, lowres=False, mod_block='mod_block',
+                 style_layer=False):
+        super(ResnetModLGenerator, self).__init__()
+
+        norm_layer = get_norm_layer(norm_type=norm_type)
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        self.inconv = nn.Sequential(
+            nn.Conv2d(input_nc, ngf, kernel_size=7, padding=3, bias=use_bias),
+            norm_layer(ngf),
+            nn.LeakyReLU(0.2, True)
+        )
+
+        encoder1 = []
+        enc1_downsampling = n_enc1
+        for i in range(enc1_downsampling):
+            mult     = 2 ** i
+            in_dims  = ngf * mult
+            out_dims = ngf * mult * 2
+            encoder1 += [
+                DownResBlock(in_dims, out_dims, norm_layer, dropout, use_bias)
+            ]
+        self.encoder1 = nn.Sequential(*encoder1)
+
+        encoder2 = []
+        style_dims = out_dims
+        enc2_downsampling = 7 - n_enc1
+        for i in range(enc2_downsampling):
+            encoder2 += [
+                DownResBlock(style_dims, style_dims, norm_layer, dropout, use_bias)
+            ]
+        encoder2 += [nn.AdaptiveAvgPool2d(1), nn.Flatten(1)]
+        self.encoder2 = nn.Sequential(*encoder2)
+
+        cls_head = []
+        if dropout > 0:
+            cls_head += [nn.Dropout(dropout)]
+        cls_head += [nn.Linear(style_dims, n_classes)]
+        self.cls_head = nn.Sequential(*cls_head)
+
+        decoder1 = []
+        conv_dims = out_dims
+        for i in range(n_blocks):
+            if mod_block == 'mod_block':
+                layer = ResnetModBlock(
+                    style_dims, conv_dims, norm_layer=norm_layer,
+                    dropout=dropout, use_bias=use_bias,
+                    style_layer=style_layer
+                )
+            elif mod_block == 'mod_block2':
+                layer = ResnetModBlock2(
+                    style_dims, conv_dims,
+                    dropout=dropout, use_bias=use_bias,
+                    style_layer=style_layer
+                )
+
+            decoder1 += [layer]
+        self.decoder1 = nn.Sequential(*decoder1)
+
+        self.lowres = lowres
+        if self.lowres:
+            self.lowdec = nn.Sequential(
+                nn.Conv2d(conv_dims, output_nc, kernel_size=1, padding=0),
+                nn.Tanh()
+            )
+
+        decoder2 = []
+        for i in range(enc1_downsampling):
+            mult = 2 ** (enc1_downsampling - i)
+            in_dims = ngf * mult
+            out_dims = in_dims // 2
+            decoder2 += [
+                UpResBlock(in_dims, out_dims, norm_layer, dropout, use_bias)
+            ]
+        decoder2 += [
+            nn.Conv2d(ngf, output_nc, kernel_size=last_ks, padding=last_ks // 2),
+            nn.Tanh()
+        ]
+        self.decoder2 = nn.Sequential(*decoder2)
+
+    def forward(self, x):
+
+        x_in = self.inconv(x)
+        enc1 = self.encoder1(x_in)
+        style = self.encoder2(enc1)
+        level = self.cls_head(style)
+
+        dec1, _ = self.decoder1([enc1, style])
+        out = self.decoder2(dec1)
+
+        if self.lowres:
+            out_low = self.lowdec(dec1)
+            return out, out_low, level
+        else:
+            return out, level
+

@@ -73,7 +73,7 @@ class SimLoss(nn.Module):
 
         if mode == 'ssim':
             self.sim = SSIM(window_size=7, sigma=1.5, n_channels=3)
-        if mode == 'ssim2':
+        elif mode == 'ssim2':
             self.sim = SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'ms_ssim':
             self.sim = MS_SSIM(window_size=7, sigma=1.5, n_channels=3)
@@ -179,7 +179,7 @@ class EvalMetrics(nn.Module):
         super(EvalMetrics, self).__init__()
 
         self.psnr = PSNR(value_range=255)
-        self.ssim = SSIM(window_size=7, sigma=1.5, value_range=255)
+        self.ssim = SSIM(window_size=9, sigma=2.375, n_channels=3, value_range=255)
 
     def forward(self, target, prediction):
         # range in [0, 255]

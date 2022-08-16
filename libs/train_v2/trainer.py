@@ -177,7 +177,7 @@ class BCITrainer(BCIBaseTrainer):
             _, _, h, w = ihc_pred_low.size()
             ihc_low = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
             G_rec_low = self.rec_loss(ihc_low, ihc_pred_low)
-            G_rec += G_rec_low * 1.0
+            G_rec += G_rec_low * self.low_weigth
 
         # sim
         G_sim = self.sim_loss(ihc, ihc_pred)
