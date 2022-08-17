@@ -1,2 +1,2 @@
-from .generators import define_G
-from .discriminators import define_D
+from .G import define_G
+from .D import define_D

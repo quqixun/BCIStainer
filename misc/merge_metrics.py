@@ -4,10 +4,11 @@ import pandas as pd
 
 if __name__ == '__main__':
 
-    input_root = './outputs'
+    data_type = 'test'
+    input_root = f'./outputs_{data_type}'
     output_dir = './assets'
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, 'metrics.csv')
+    output_path = os.path.join(output_dir, f'metrics_{data_type}.csv')
 
     metrics_list = []
     for exp in os.listdir(input_root):

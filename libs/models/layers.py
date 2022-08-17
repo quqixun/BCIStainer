@@ -5,62 +5,43 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class ResnetBlock(nn.Module):
+class ConvNormAct(nn.Module):
 
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
-        super(ResnetBlock, self).__init__()
-        self.conv_block = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias)
+    def __init__(self, in_dims, out_dims, norm_layer=nn.BatchNorm2d,
+                 kernel_size=3, stride=1, padding=1, bias=True,
+                 sampling='none'):
+        super(ConvNormAct, self).__init__()
 
-    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+        assert sampling in ['down', 'up', 'none']
+        self.sampling = sampling
 
-        conv_block = []
-        p = 0
-        if padding_type == 'reflect':
-            conv_block += [nn.ReflectionPad2d(1)]
-        elif padding_type == 'replicate':
-            conv_block += [nn.ReplicationPad2d(1)]
-        elif padding_type == 'zero':
-            p = 1
-        else:
-            raise NotImplementedError('padding [%s] is not implemented' % padding_type)
-
-        conv_block += [
-            nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias),
-            norm_layer(dim),
-            nn.ReLU(True)
-        ]
-        if use_dropout:
-            conv_block += [nn.Dropout(0.5)]
-
-        p = 0
-        if padding_type == 'reflect':
-            conv_block += [nn.ReflectionPad2d(1)]
-        elif padding_type == 'replicate':
-            conv_block += [nn.ReplicationPad2d(1)]
-        elif padding_type == 'zero':
-            p = 1
-        else:
-            raise NotImplementedError('padding [%s] is not implemented' % padding_type)
-        conv_block += [
-            nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias),
-            norm_layer(dim)
-        ]
-
-        return nn.Sequential(*conv_block)
-
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
+                      stride=stride, padding=padding, bias=bias),
+            norm_layer(out_dims),
+            nn.LeakyReLU(0.2, True)
+        )
+    
     def forward(self, x):
-        out = x + self.conv_block(x)
-        return out
+
+        if self.sampling == 'down':
+            x = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
+        elif self.sampling == 'up':
+            x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+
+        return self.conv(x)
 
 
 class AdaIN(nn.Module):
+
     def __init__(self, style_dim, num_features):
         super(AdaIN, self).__init__()
-        self.norm = nn.InstanceNorm2d(num_features, affine=False)
-        self.fc = nn.Linear(style_dim, num_features * 2)
 
-    def forward(self, x, s):
-        h = self.fc(s)
+        self.norm = nn.InstanceNorm2d(num_features, affine=False)
+        self.linear = nn.Linear(style_dim, num_features * 2)
+
+    def forward(self, x, style):
+        h = self.linear(style)
         h = h.view(h.size(0), h.size(1), 1, 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
         return (1 + gamma) * self.norm(x) + beta
@@ -68,156 +49,25 @@ class AdaIN(nn.Module):
 
 class ResnetAdaBlock(nn.Module):
 
-    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias):
+    def __init__(self, style_dim, conv_dim, dropout, use_bias):
         super(ResnetAdaBlock, self).__init__()
 
-        self.style1 = AdaIN(style_dim, conv_dim)
-        self.style2 = AdaIN(style_dim, conv_dim)
-
-        conv1 = [
-            nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(conv_dim),
-            nn.LeakyReLU(0.2, True)
-        ]
-        if dropout > 0:
-            conv1 += [nn.Dropout(dropout)]
-        self.conv1 = nn.Sequential(*conv1)
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(conv_dim),
-            nn.LeakyReLU(0.2, True)
-        )
+        self.act     = nn.LeakyReLU(0.2, True)
+        self.style1  = AdaIN(style_dim, conv_dim)
+        self.style2  = AdaIN(style_dim, conv_dim)
+        self.dropout = nn.Dropout(dropout)if dropout > 0 else None
+        self.conv1   = nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias)
+        self.conv2   = nn.Conv2d(conv_dim, conv_dim, kernel_size=3, padding=1, bias=use_bias)
 
     def forward(self, x):
         x_in, style = x
-        out = self.style1(x_in, style)
-        out = self.conv1(out)
+        out = self.conv1(x_in)
+        out = self.style1(out, style)
+        out = self.act(out)
+        out = self.conv2(x_in)
         out = self.style2(out, style)
-        out = self.conv2(out)
+        out = self.act(out)
         return (x_in + out) / math.sqrt(2), style
-
-
-class DownBlock(nn.Module):
-
-    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
-        super(DownBlock, self).__init__()
-
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout),
-            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True)
-        )
-
-    def forward(self, x):
-        return self.conv(x)
-
-
-class UpBlock(nn.Module):
-
-    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
-        super(UpBlock, self).__init__()
-
-        self.conv = nn.Sequential(
-            nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=2,
-                               padding=1, output_padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout),
-            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True)
-        )
-
-    def forward(self, x):
-        return self.conv(x)
-
-
-class UpSkipBlock(nn.Module):
-
-    def __init__(self, in_dim, out_dim, norm_layer, dropout, use_bias):
-        super(UpSkipBlock, self).__init__()
-
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout),
-            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True)
-        )
-
-    def forward(self, x1, x2):
-        x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
-        x = torch.cat([x1, x2], dim=1)
-        return self.conv(x)
-
-
-class UpAdaBlock(nn.Module):
-
-    def __init__(self, style_dim, in_dim, out_dim, norm_layer, dropout, use_bias):
-        super(UpAdaBlock, self).__init__()
-
-        self.style1 = AdaIN(style_dim, in_dim)
-        self.style2 = AdaIN(style_dim, out_dim)
-
-        self.conv1 = nn.Sequential(
-            nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=2,
-                               padding=1, output_padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout)
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-        )
-
-    def forward(self, x, style):
-        out = self.style1(x, style)
-        out = self.conv1(out)
-        out = self.style2(out, style)
-        out = self.conv2(out)
-        return out
-
-
-class UpSkipAdaBlock(nn.Module):
-
-    def __init__(self, style_dim, in_dim, out_dim, norm_layer, dropout, use_bias):
-        super(UpSkipAdaBlock, self).__init__()
-
-        self.style1 = AdaIN(style_dim, in_dim)
-        self.style2 = AdaIN(style_dim, out_dim)
-
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout)
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=1, bias=use_bias),
-            norm_layer(out_dim),
-            nn.LeakyReLU(0.2, True),
-        )
-
-    def forward(self, x1, x2, style):
-        x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
-        x = torch.cat([x1, x2], dim=1)
-
-        out = self.style1(x, style)
-        out = self.conv1(out)
-        out = self.style2(out, style)
-        out = self.conv2(out)
-        return out
 
 
 class EqualizedWeight(nn.Module):
@@ -244,10 +94,11 @@ class EqualizedLinear(nn.Module):
         return F.linear(x, self.weight(), bias=self.bias)
 
 
-class ModConv2D(nn.Module):
+class ModConv2d(nn.Module):
 
-    def __init__(self, in_dim, out_dim, kernel_size, demodulate=True, use_bias=True, eps=1e-8):
-        super(ModConv2D, self).__init__()
+    def __init__(self, in_dim, out_dim, kernel_size,
+                 demodulate=True, use_bias=True, eps=1e-8):
+        super(ModConv2d, self).__init__()
 
         self.out_dim = out_dim
         self.use_bias = use_bias
@@ -287,42 +138,42 @@ class ModConv2D(nn.Module):
 
 class ResnetModBlock(nn.Module):
 
-    def __init__(self, style_dim, conv_dim, norm_layer, dropout, use_bias):
+    def __init__(self, style_dim, conv_dim, dropout, use_bias, style_linear=True):
         super(ResnetModBlock, self).__init__()
-        assert style_dim == conv_dim
 
-        # self.style1 = Linear(style_dim, conv_dim, bias=1.0)
-        # self.style2 = Linear(style_dim, conv_dim, bias=1.0)
+        self.style_linear = style_linear
+        if self.style_linear:
+            self.style1 = nn.Linear(style_dim, conv_dim, bias=True)
+            self.style2 = nn.Linear(style_dim, conv_dim, bias=True)
+        else:
+            assert style_dim == conv_dim
 
-        conv1 = [
-            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
-            norm_layer(conv_dim),
-            nn.LeakyReLU(0.2, True)
-        ]
+        conv1 = []
+        conv1.append(
+            ModConv2d(
+                conv_dim, conv_dim, kernel_size=3,
+                demodulate=True, use_bias=use_bias
+            )
+        )
+        conv1.append(nn.LeakyReLU(0.2, True))
         if dropout > 0:
-            conv1 += [nn.Dropout(dropout)]
+            conv1.append(nn.Dropout(dropout))
         self.conv1 = nn.Sequential(*conv1)
 
         self.conv2 = nn.Sequential(
-            ModConv2D(conv_dim, conv_dim, kernel_size=3, demodulate=True, use_bias=use_bias),
-            norm_layer(conv_dim),
+            ModConv2d(
+                conv_dim, conv_dim, kernel_size=3,
+                demodulate=True, use_bias=use_bias
+            ),
             nn.LeakyReLU(0.2, True)
         )
 
     def forward(self, x):
         x_in, style = x
-        # out = self.conv1((x_in, self.style1(style)))
-        # out = self.conv2((out, self.style2(style)))
-        out = self.conv1((x_in, style))
-        out = self.conv2((out, style))
+        if self.style_linear:
+            out = self.conv1((x_in, self.style1(style)))
+            out = self.conv2((out, self.style2(style)))
+        else:
+            out = self.conv1((x_in, style))
+            out = self.conv2((out, style))
         return (x_in + out) / math.sqrt(2), style
-
-
-if __name__ == '__main__':
-
-    x = torch.rand(2, 32, 128, 128)
-    style = torch.rand(2, 32)
-
-    m = ResnetModBlock(32, 32, nn.BatchNorm2d, 0.0, False)
-    out, _ = m((x, style))
-    print(out.size())
