@@ -6,24 +6,6 @@ import torch.nn.functional as F
 from piqa import SSIM, MS_SSIM, HaarPSI, PSNR
 
 
-class ClsLoss(nn.Module):
-
-    def __init__(self, mode, weight=1.0):
-        super(ClsLoss, self).__init__()
-
-        self.weight = weight
-
-        if mode == 'ce':
-            self.loss = nn.CrossEntropyLoss()
-        elif mode == 'focal':
-            self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
-        else:
-            raise NotImplementedError(f'cls mode {mode} not implemented')
-
-    def forward(self, target, prediction):
-        return self.loss(prediction, target) * self.weight
-
-
 class CharbonnierLoss(nn.Module):
 
     def __init__(self, eps=1e-3):
@@ -73,6 +55,8 @@ class SimLoss(nn.Module):
 
         if mode == 'ssim':
             self.sim = SSIM(window_size=7, sigma=1.5, n_channels=3)
+        elif mode == 'ssim2':
+            self.sim = SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'ms_ssim':
             self.sim = MS_SSIM(window_size=7, sigma=1.5, n_channels=3)
         elif mode == 'haarpsi':
@@ -171,25 +155,6 @@ class MSGANLoss(nn.Module):
             return self.loss(input, target_is_real, for_D) * self.weight
 
 
-class EvalMetrics(nn.Module):
-
-    def __init__(self):
-        super(EvalMetrics, self).__init__()
-
-        self.psnr = PSNR(value_range=255)
-        self.ssim = SSIM(window_size=7, sigma=1.5, value_range=255)
-
-    def forward(self, target, prediction):
-        # range in [0, 255]
-        target_ = (target + 1.0) / 2.0 * 255.0
-        prediction_ = (prediction + 1.0) / 2.0 * 255.0
-
-        psnr = self.psnr(prediction_, target_)
-        ssim = self.ssim(prediction_, target_)
-
-        return psnr, ssim
-
-
 class FocalLoss(nn.Module):
     # https://github.com/yatengLG/Focal-Loss-Pytorch
 
@@ -227,3 +192,40 @@ class FocalLoss(nn.Module):
         else:
             loss = loss.sum()
         return loss
+
+
+class ClsLoss(nn.Module):
+
+    def __init__(self, mode, weight=1.0):
+        super(ClsLoss, self).__init__()
+
+        self.weight = weight
+
+        if mode == 'ce':
+            self.loss = nn.CrossEntropyLoss()
+        elif mode == 'focal':
+            self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
+        else:
+            raise NotImplementedError(f'cls mode {mode} not implemented')
+
+    def forward(self, target, prediction):
+        return self.loss(prediction, target) * self.weight
+
+
+class EvalMetrics(nn.Module):
+
+    def __init__(self):
+        super(EvalMetrics, self).__init__()
+
+        self.psnr = PSNR(value_range=255)
+        self.ssim = SSIM(window_size=9, sigma=2.375, n_channels=3, value_range=255)
+
+    def forward(self, target, prediction):
+        # range in [0, 255]
+        target_ = (target + 1.0) / 2.0 * 255.0
+        prediction_ = (prediction + 1.0) / 2.0 * 255.0
+
+        psnr = self.psnr(prediction_, target_)
+        ssim = self.ssim(prediction_, target_)
+
+        return psnr, ssim
