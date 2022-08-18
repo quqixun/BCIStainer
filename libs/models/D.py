@@ -28,10 +28,14 @@ class MultiscaleDiscriminator(nn.Module):
         self.num_layers = num_layers
 
         for i in range(num_depths):
-            netD = NLayerDiscriminator(input_channels, init_channels, num_layers, norm_type)
+            netD = NLayerDiscriminator(
+                input_channels, init_channels, num_layers, norm_type
+            )
             setattr(self, 'layer' + str(i), netD.model)
 
-        self.downsample = nn.AvgPool2d(3, stride=2, padding=1, count_include_pad=False)
+        # self.downsample = nn.AvgPool2d(
+        #     3, stride=2, padding=1, count_include_pad=False
+        # )
 
     def singleD_forward(self, model, input):
         return [model(input)]
@@ -53,7 +57,8 @@ class MultiscaleDiscriminator(nn.Module):
 
 class NLayerDiscriminator(nn.Module):
 
-    def __init__(self, input_channels, init_channels=64, num_layers=3, norm_type='batch'):
+    def __init__(self, input_channels, init_channels=64,
+                 num_layers=3, norm_type='batch'):
         super(NLayerDiscriminator, self).__init__()
 
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -65,7 +70,10 @@ class NLayerDiscriminator(nn.Module):
         kw = 4
         padw = 1
         sequence = [
-            nn.Conv2d(input_channels, init_channels, kernel_size=kw, stride=2, padding=padw),
+            nn.Conv2d(
+                input_channels, init_channels,
+                kernel_size=kw, stride=2, padding=padw
+            ),
             nn.LeakyReLU(0.2, True)
         ]
 
@@ -75,7 +83,10 @@ class NLayerDiscriminator(nn.Module):
             nf_mult_prev = nf_mult
             nf_mult = min(2 ** n, 8)
             sequence += [
-                nn.Conv2d(init_channels * nf_mult_prev, init_channels * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                nn.Conv2d(
+                    init_channels * nf_mult_prev, init_channels * nf_mult,
+                    kernel_size=kw, stride=2, padding=padw, bias=use_bias
+                ),
                 norm_layer(init_channels * nf_mult),
                 nn.LeakyReLU(0.2, True)
             ]
@@ -83,12 +94,20 @@ class NLayerDiscriminator(nn.Module):
         nf_mult_prev = nf_mult
         nf_mult = min(2 ** num_layers, 8)
         sequence += [
-            nn.Conv2d(init_channels * nf_mult_prev, init_channels * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+            nn.Conv2d(
+                init_channels * nf_mult_prev, init_channels * nf_mult,
+                kernel_size=kw, stride=1, padding=padw, bias=use_bias
+            ),
             norm_layer(init_channels * nf_mult),
             nn.LeakyReLU(0.2, True)
         ]
 
-        sequence += [nn.Conv2d(init_channels * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+        sequence += [
+            nn.Conv2d(
+                init_channels * nf_mult, 1,
+                kernel_size=kw, stride=1, padding=padw
+            )
+        ]
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):

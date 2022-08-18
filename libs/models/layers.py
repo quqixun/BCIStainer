@@ -7,29 +7,47 @@ import torch.nn.functional as F
 
 class ConvNormAct(nn.Module):
 
-    def __init__(self, in_dims, out_dims, norm_layer=nn.BatchNorm2d,
+    def __init__(self, in_dims, out_dims, conv_type='conv2d',
                  kernel_size=3, stride=1, padding=1, bias=True,
-                 sampling='none'):
+                 norm_layer=nn.BatchNorm2d, sampling='none'):
         super(ConvNormAct, self).__init__()
 
         assert sampling in ['down', 'up', 'none']
         self.sampling = sampling
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
-                      stride=stride, padding=padding, bias=bias),
-            norm_layer(out_dims),
-            nn.LeakyReLU(0.2, True)
-        )
-    
+        assert conv_type in ['conv2d', 'convTranspose2d']
+        self.conv_type = conv_type
+        if self.conv_type == 'conv2d':
+            self.conv = nn.Sequential(
+                nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
+                          stride=stride, padding=padding, bias=bias),
+                norm_layer(out_dims),
+                nn.LeakyReLU(0.2, True)
+            )
+        else:  # self.conv_type == 'convTranspose2d'
+            self.conv = nn.Sequential(
+                nn.ConvTranspose2d(in_dims, out_dims, kernel_size=kernel_size,
+                                   stride=stride, padding=padding,
+                                   output_padding=padding, bias=bias),
+                norm_layer(out_dims),
+                nn.LeakyReLU(0.2, True)
+            )
+
     def forward(self, x):
 
-        if self.sampling == 'down':
-            x = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
-        elif self.sampling == 'up':
-            x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        if self.conv_type == 'conv2d':
+            if self.sampling == 'down':
+                out = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
+                out = self.conv(out)
+            elif self.sampling == 'up':
+                out = self.conv(x)
+                out = F.interpolate(out, scale_factor=2, mode='bilinear', align_corners=True)
+            else:
+                out = self.conv(x)
+        else:  # self.conv_type == 'convTranspose2d'
+            out = self.conv(x)
 
-        return self.conv(x)
+        return out
 
 
 class AdaIN(nn.Module):

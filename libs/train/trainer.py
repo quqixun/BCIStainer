@@ -4,9 +4,9 @@ import datetime
 import torch.nn.functional as F
 
 from .logger import *
+from torch.cuda import amp
 from .base import BCIBaseTrainer
 from .diffaug import DiffAugment
-
 
 class BCITrainer(BCIBaseTrainer):
 
@@ -65,7 +65,6 @@ class BCITrainer(BCIBaseTrainer):
 
             # forward
             he, ihc, level = [d.to(self.device) for d in data]
-
             multi_outputs = self.G(he)
             if len(multi_outputs) == 2:
                 ihc_hr_pred, level_pred = multi_outputs
@@ -84,30 +83,31 @@ class BCITrainer(BCIBaseTrainer):
             # update G
             self._set_requires_grad(self.D, False)
             G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-            loss_G = G_gan + G_rec + G_sim
+            G_cls = self.cls_loss(level, level_pred)
+            loss_G = G_gan + G_rec + G_sim + G_cls
+            loss_G.backward()
+            if (iter_step + 1) % self.accum_iter == 0:
+                self.G_opt.step()
 
+            # update logger
             logger.update(
                 D_fake=D_fake.item(),
                 D_real=D_real.item(),
                 G_gan=G_gan.item(),
                 G_rec=G_rec.item(),
                 G_sim=G_sim.item(),
+                G_cls=G_cls.item(),
                 lr=self.G_opt.param_groups[0]['lr']
             )
-
-            if level_pred is not None:
-                G_cls = self.cls_loss(level, level_pred)
-                loss_G += G_cls
-                logger.update(G_cls=G_cls.item())
-
-            loss_G.backward()
-            if (iter_step + 1) % self.accum_iter == 0:
-                self.G_opt.step()
 
             if self.ema:
                 self.Gema.update()
 
-        return {k: meter.global_avg for k, meter in logger.meters.items()}
+        logger_info = {
+            key: meter.global_avg
+            for key, meter in logger.meters.items()
+        }
+        return logger_info
 
     @torch.no_grad()
     def _val_epoch(self, val_model, loader, epoch):
@@ -125,8 +125,12 @@ class BCITrainer(BCIBaseTrainer):
 
             psnr, ssim = self.eval_metrics(ihc, ihc_hr_pred)
             logger.update(psnr=psnr.item(), ssim=ssim.item())
-
-        return {k: meter.global_avg for k, meter in logger.meters.items()}
+        
+        logger_info = {
+            key: meter.global_avg
+            for key, meter in logger.meters.items()
+        }
+        return logger_info
 
     def _D_loss(self, he, ihc, ihc_hr_pred):
 

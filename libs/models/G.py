@@ -39,8 +39,9 @@ class StyleTranslator(nn.Module):
 
         self.inconv = ConvNormAct(
             in_dims=input_channels, out_dims=init_channels,
-            norm_layer=norm_layer, kernel_size=7, padding=3,
-            bias=use_bias, sampling='none'
+            conv_type='conv2d', kernel_size=7, stride=1,
+            padding=3, bias=use_bias, norm_layer=norm_layer,
+            sampling='none'
         )
 
         encoder1 = []
@@ -51,8 +52,9 @@ class StyleTranslator(nn.Module):
             encoder1.append(
                 ConvNormAct(
                     in_dims=in_dims, out_dims=out_dims,
-                    norm_layer=norm_layer, kernel_size=3, padding=1,
-                    bias=use_bias, sampling='down'
+                    conv_type='conv2d', kernel_size=3, stride=2,
+                    padding=1, bias=use_bias, norm_layer=norm_layer,
+                    sampling='none'
                 )
             )
         self.encoder1 = nn.Sequential(*encoder1)
@@ -66,8 +68,9 @@ class StyleTranslator(nn.Module):
             encoder2.append(
                 ConvNormAct(
                     in_dims=style_dims, out_dims=style_dims,
-                    norm_layer=norm_layer, kernel_size=3, padding=1,
-                    bias=use_bias, sampling='down'
+                    conv_type='conv2d', kernel_size=3, stride=2,
+                    padding=1, bias=use_bias, norm_layer=norm_layer,
+                    sampling='none'
                 )
             )
         encoder2.append(nn.AdaptiveAvgPool2d(1))
@@ -100,14 +103,9 @@ class StyleTranslator(nn.Module):
         self.output_lowres = output_lowres
         if self.output_lowres:
             self.lowres_outconv = nn.Sequential(
-                ConvNormAct(
-                    in_dims=conv_dims, out_dims=conv_dims,
-                    norm_layer=norm_layer, kernel_size=3, padding=1,
-                    bias=use_bias, sampling='none'
-                ),
                 nn.Conv2d(
                     conv_dims, output_channels,
-                    kernel_size=1, padding=0
+                    kernel_size=3, padding=1
                 ),
                 nn.Tanh()
             )
@@ -117,12 +115,13 @@ class StyleTranslator(nn.Module):
             mult     = 2 ** (encoder1_blocks - i)
             in_dims  = init_channels * mult
             out_dims = int(init_channels * mult / 2)
-
             decoder2.append(
                 ConvNormAct(
                     in_dims=in_dims, out_dims=out_dims,
-                    norm_layer=norm_layer, kernel_size=3, padding=1,
-                    bias=use_bias, sampling='up'
+                    conv_type='convTranspose2d',
+                    kernel_size=3, stride=2, padding=1,
+                    bias=use_bias, norm_layer=norm_layer,
+                    sampling='none'
                 )
             )
         self.decoder2 = nn.Sequential(*decoder2)
@@ -130,11 +129,10 @@ class StyleTranslator(nn.Module):
         self.highres_outconv = nn.Sequential(
             nn.Conv2d(
                 init_channels, output_channels,
-                kernel_size=1, padding=0
+                kernel_size=7, padding=3
             ),
             nn.Tanh()
         )
-
 
     def forward(self, x):
 
