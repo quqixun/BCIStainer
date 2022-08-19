@@ -4,13 +4,13 @@ import datetime
 import torch.nn.functional as F
 
 from ..utils import *
-from .base import BCIBaseTrainer
+from .base import BCICAHRBaseTrainer
 
 
-class BCITrainer(BCIBaseTrainer):
+class BCICAHRTrainer(BCICAHRBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
-        super(BCITrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        super(BCICAHRTrainer, self).__init__(configs, exp_dir, resume_ckpt)
 
     def forward(self, train_loader, val_loader):
 

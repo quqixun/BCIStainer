@@ -40,8 +40,8 @@ class ConvNormAct(nn.Module):
                 out = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
                 out = self.conv(out)
             elif self.sampling == 'up':
-                out = self.conv(x)
-                out = F.interpolate(out, scale_factor=2, mode='bilinear', align_corners=True)
+                out = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+                out = self.conv(out)
             else:
                 out = self.conv(x)
         else:  # self.conv_type == 'convTranspose2d'

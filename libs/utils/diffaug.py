@@ -10,7 +10,7 @@ import torch.nn.functional as F
 warnings.filterwarnings('ignore')
 
 
-def DiffAugment(x, policy=['color', 'translation', 'cutout'],
+def DiffAugment(x, policy=['translation', 'rotation', 'cutout'],
                 channels_first=True):
 
     if policy:
@@ -58,6 +58,18 @@ def rand_translation(x, ratio=0.125):
     return x
 
 
+def rand_rotation(x):
+    theta = torch.randint(0, 4, [1])[0] / 2 * torch.pi
+    rotmat = torch.tensor(
+        [[torch.cos(theta), -torch.sin(theta), 0],
+         [torch.sin(theta),  torch.cos(theta), 0]],
+        dtype=x.dtype, device=x.device
+    )[None, ...].repeat(x.shape[0], 1, 1)
+    grid = F.affine_grid(rotmat, x.size())
+    x = F.grid_sample(x, grid)
+    return x
+
+
 def rand_cutout(x, ratio=0.25):
     cutout_size = int(x.size(2) * ratio + 0.5), int(x.size(3) * ratio + 0.5)
     offset_x = torch.randint(0, x.size(2) + (1 - cutout_size[0] % 2), size=[x.size(0), 1, 1], device=x.device)
@@ -78,5 +90,6 @@ def rand_cutout(x, ratio=0.25):
 AUGMENT_FNS = {
     'color': [rand_brightness, rand_saturation, rand_contrast],
     'translation': [rand_translation],
-    'cutout': [rand_cutout],
+    'rotation': [rand_rotation],
+    'cutout': [rand_cutout]
 }

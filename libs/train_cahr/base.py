@@ -8,7 +8,7 @@ from ema_pytorch import EMA
 from ..models import define_G, define_D
 
 
-class BCIBaseTrainer(object):
+class BCICAHRBaseTrainer(object):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
 
