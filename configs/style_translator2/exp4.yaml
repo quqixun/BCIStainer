@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator/exp3
+exp:  style_translator2/exp4
 seed: 42
 
 loader:
@@ -12,7 +12,7 @@ loader:
   pin_memory:  true
 
 G:
-  name: style_translator
+  name: style_translator2
   params:
     image_size:      1024
     input_channels:  3
@@ -31,12 +31,13 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
+    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
@@ -46,7 +47,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   charb
     weight: 10.0
   sim:
     mode:   ssim
@@ -63,15 +64,15 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.00001
-  warmup: 60
+  min_lr: 0.0
+  warmup: 50
 
 trainer:
-  epochs:     200
+  epochs:     150
   accum_iter: 1
-  diffaug:    false
+  diffaug:    true
   ema:        true
-  low_weight: 0.3
+  low_weight: 1.0
   ckpt_freq:  1000
   print_freq: 100
 

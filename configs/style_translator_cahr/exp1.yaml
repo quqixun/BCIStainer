@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator/exp3
+exp:  style_translator_cahr/exp1
 seed: 42
 
 loader:
@@ -10,11 +10,13 @@ loader:
   val_batch:   1
   num_workers: 20
   pin_memory:  true
+  apply_hrda:  true
 
 G:
-  name: style_translator
+  name: style_translator_cahr
   params:
     image_size:      1024
+    crop_size:       512
     input_channels:  3
     output_channels: 3
     init_channels:   32
@@ -25,7 +27,7 @@ G:
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   true
+    output_lowres:   false
   init:
     init_type: normal
     init_gain: 0.02
@@ -71,7 +73,7 @@ trainer:
   accum_iter: 1
   diffaug:    false
   ema:        true
-  low_weight: 0.3
+  low_weight: 1.0
   ckpt_freq:  1000
   print_freq: 100
 

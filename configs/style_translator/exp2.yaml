@@ -49,7 +49,7 @@ loss:
     mode:   mae
     weight: 10.0
   sim:
-    mode:   ssim2
+    mode:   ssim
     weight: 1.0
   gan:
     mode:   lsgan
