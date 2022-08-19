@@ -1,0 +1,4 @@
+model,exp,pred,metrics,psnr_avg,psnr_std,ssim_avg,ssim_std
+style_translator,exp4,model_best_psnr_tta,./evaluations/style_translator/exp4/model_best_psnr_tta/metrics.csv,23.06629829819877,4.744044519467495,0.5573663669975261,0.18414304648898241
+style_translator,exp2,model_best_psnr_tta,./evaluations/style_translator/exp2/model_best_psnr_tta/metrics.csv,23.00921634633975,4.777640553908688,0.5476832247411195,0.1894228131108367
+style_translator,exp3,model_best_psnr_tta,./evaluations/style_translator/exp3/model_best_psnr_tta/metrics.csv,22.86103083594854,4.834774504801982,0.5380253453054601,0.19271079215890516

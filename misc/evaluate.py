@@ -11,10 +11,8 @@ def psnr_and_ssim():
     he_dir = './data/test/HE'
     ihc_dir = './data/test/IHC'
 
-    exp = 'resnet_ada_l_v2_exp5'
-    # exp = 'resnet_mod_v2_exp3'
-    # exp = 'resnet_ada_v2_exp18'
-    ihc_pred_dir = f'./outputs_test/{exp}/model_best_psnr_tta/IHC_pred'
+    exp = 'style_translator/exp4'
+    ihc_pred_dir = f'./evaluations/{exp}/model_best_psnr_tta/IHC_pred'
 
     psnr = []
     ssim = []
