@@ -11,7 +11,8 @@ from torch.utils.data import Dataset, DataLoader
 
 class BCICAHRDataset(Dataset):
 
-    def __init__(self, data_dir, augment=False, norm_method='global_minmax'):
+    def __init__(self, data_dir, mode, crop_size=512, random_crop=False,
+                 augment=False, norm_method='global_minmax'):
         super(BCICAHRDataset, self).__init__()
 
         he_dir  = opj(data_dir, 'HE')
@@ -47,9 +48,21 @@ class BCICAHRDataset(Dataset):
                 additional_targets={'image0': 'image'}
             )
 
+        self.mode = mode
+        self.full_size = 1024
+        self.crop_size = crop_size
+        self.random_crop = random_crop
         self.norm_method = norm_method
+        self.crop_range  = self.full_size - self.crop_size
 
-        return
+        if not self.random_crop:
+            crop_size = crop_size // 2
+            upper_idx = self.full_size - self.crop_size + 1
+            self.crop_row_idxs = list(range(0, upper_idx, crop_size))
+            self.crop_col_idxs = list(range(0, upper_idx, crop_size))
+
+            print(self.crop_row_idxs)
+            print(self.crop_col_idxs)
 
     def __len__(self):
         return len(self.he_list)
@@ -65,34 +78,44 @@ class BCICAHRDataset(Dataset):
             he  = transformed['image']
             ihc = transformed['image0']
 
-            # plt.figure(figsize=(18, 10))
-            # plt.subplot(221)
-            # plt.title(f'HE  - {he.shape}')
-            # plt.imshow(he)
-            # plt.axis('off')
-            # plt.subplot(222)
-            # plt.title(f'IHC - {ihc.shape}')
-            # plt.imshow(ihc)
-            # plt.axis('off')
-            # plt.subplot(223)
-            # plt.title(f'HE A  - {hea.shape}')
-            # plt.imshow(hea)
-            # plt.axis('off')
-            # plt.subplot(224)
-            # plt.title(f'IHC A - {ihca.shape}')
-            # plt.imshow(ihca)
-            # plt.axis('off')
-            # plt.tight_layout()
-            # plt.show()
-
         # crop image
+        if self.random_crop:
+            row_idx = np.random.randint(self.crop_range)
+            col_idx = np.random.randint(self.crop_range)
+        else:
+            row_idx = np.random.choice(self.crop_row_idxs)
+            col_idx = np.random.choice(self.crop_col_idxs)
+
+        crop_idx = np.array([row_idx, col_idx])
+        he_crop = he[
+            row_idx:row_idx + self.crop_size,
+            col_idx:col_idx + self.crop_size
+        ]
+
+        plt.figure(figsize=(15, 6))
+        plt.subplot(131)
+        plt.title(f'HE  - {he.shape}')
+        plt.imshow(he)
+        plt.axis('off')
+        plt.subplot(132)
+        plt.title(f'IHC - {ihc.shape}')
+        plt.imshow(ihc)
+        plt.axis('off')
+        plt.subplot(133)
+        plt.title(f'HE Crop  - {he_crop.shape} - ({row_idx}, {col_idx})')
+        plt.imshow(he_crop)
+        plt.axis('off')
+        plt.tight_layout()
+        plt.show()
 
         he  = normalize_image(he, 'he', self.norm_method)
         he  = he.transpose(2, 0, 1).astype(np.float32)
         ihc = normalize_image(ihc, 'ihc', self.norm_method)
         ihc = ihc.transpose(2, 0, 1).astype(np.float32)
+        he_crop = normalize_image(he_crop, 'he', self.norm_method)
+        he_crop = he_crop.transpose(2, 0, 1).astype(np.float32)
 
-        return he, ihc, level
+        return he, ihc, level, he_crop, crop_idx
 
 
 def get_cahr_dataloader(mode, data_dir, configs):
@@ -109,8 +132,12 @@ def get_cahr_dataloader(mode, data_dir, configs):
         shuffle    = False
         augment    = False
 
-    dataset = BCIDataset(
-        data_dir, augment, configs.norm_method
+    dataset = BCICAHRDataset(
+        data_dir=data_dir,
+        mode=mode,
+        crop_size=configs.crop_size,
+        augment=augment,
+        norm_method=configs.norm_method
     )
 
     dataloader = DataLoader(

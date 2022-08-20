@@ -34,6 +34,9 @@ def check_train_args(args):
     if not os.path.isfile(args.config_file):
         raise IOError(f'config_file {args.config_file} is not exist')
 
+    if args.trainer not in ['basic', 'cahr']:
+        raise ValueError('trainer is not one of basic or cahr')
+
     return
 
 

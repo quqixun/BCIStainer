@@ -10,7 +10,7 @@ import torch.nn.functional as F
 warnings.filterwarnings('ignore')
 
 
-def DiffAugment(x, policy=['translation', 'rotation', 'cutout'],
+def DiffAugment(x, policy=['rotation', 'cutout'],
                 channels_first=True):
 
     if policy:
