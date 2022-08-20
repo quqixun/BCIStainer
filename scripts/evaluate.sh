@@ -6,6 +6,10 @@ config_file_list=(
     ./configs/style_translator2/exp2.yaml
     ./configs/style_translator2/exp3.yaml
     ./configs/style_translator2/exp4.yaml
+    # ./configs/style_translator/exp5.yaml
+    # ./configs/style_translator/exp6.yaml
+    # ./configs/style_translator/exp7.yaml
+    # ./configs/style_translator/exp8.yaml
 )
 
 

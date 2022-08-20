@@ -2,7 +2,8 @@
 
 
 config_file_list=(
-    ./configs/style_translator2/exp1.yaml
+    ./configs/style_translator_cahr/exp1.yaml
+    # ./configs/style_translator/exp5.yaml
 )
 
 
@@ -14,6 +15,7 @@ for config_file in ${config_file_list[@]}; do
         --train_dir   ./data/train  \
         --val_dir     ./data/val    \
         --exp_root    ./experiments \
-        --config_file $config_file
+        --config_file $config_file  \
+        --trainer     cahr
 
 done

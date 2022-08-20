@@ -2,7 +2,7 @@
 
 
 config_file_list=(
-    ./configs/style_translator2/exp3.yaml
+    ./configs/style_translator/exp7.yaml
 )
 
 
