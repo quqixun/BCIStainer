@@ -265,7 +265,7 @@ class StyleTranslatorCAHR(nn.Module):
             self.lowres_outconv = nn.Sequential(
                 nn.Conv2d(
                     conv_dims, output_channels,
-                    kernel_size=1, padding=0
+                    kernel_size=3, padding=1
                 ),
                 nn.Tanh()
             )
@@ -289,7 +289,7 @@ class StyleTranslatorCAHR(nn.Module):
         self.highres_outconv = nn.Sequential(
             nn.Conv2d(
                 init_channels, output_channels,
-                kernel_size=1, padding=0
+                kernel_size=7, padding=3
             ),
             nn.Tanh()
         )
@@ -298,7 +298,7 @@ class StyleTranslatorCAHR(nn.Module):
         self.mask_outconv = nn.Sequential(
             nn.Conv2d(
                 init_channels, 1,
-                kernel_size=1, padding=0
+                kernel_size=7, padding=3
             ),
             nn.Sigmoid()
         )

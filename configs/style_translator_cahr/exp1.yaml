@@ -8,9 +8,9 @@ loader:
   crop_size:   512
   random_crop: false
   norm_method: global_minmax
-  train_batch: 1
+  train_batch: 4
   val_batch:   1
-  num_workers: 1
+  num_workers: 20
   pin_memory:  true
 
 G:
@@ -71,7 +71,7 @@ scheduler:
 
 trainer:
   epochs:     200
-  accum_iter: 1
+  accum_iter: 4
   diffaug:    false
   ema:        true
   low_weight: 1.0

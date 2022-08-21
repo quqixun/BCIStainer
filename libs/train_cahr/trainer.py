@@ -87,6 +87,8 @@ class BCICAHRTrainer(BCICAHRBaseTrainer):
             loss_G.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
+                if self.ema:
+                    self.Gema.update()
 
             # update logger
             logger.update(
@@ -98,9 +100,6 @@ class BCICAHRTrainer(BCICAHRBaseTrainer):
                 G_cls=G_cls.item(),
                 lr=self.G_opt.param_groups[0]['lr']
             )
-
-            if self.ema:
-                self.Gema.update()
 
         logger_info = {
             key: meter.global_avg
