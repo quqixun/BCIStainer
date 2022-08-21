@@ -24,16 +24,16 @@ def main(args):
         # initialize trainer
         trainer = BCITrainer(configs, exp_dir, args.resume_ckpt)
 
-        # training model
-        trainer.forward(train_loader, val_loader)
-
     elif args.trainer == 'cahr':
         # loads dataloder for training and validation
         train_loader = get_cahr_dataloader('train', args.train_dir, configs.loader)
-        # val_loader   = get_cahr_dataloader('val',   args.train_dir, configs.loader)
+        val_loader   = get_cahr_dataloader('val',   args.train_dir, configs.loader)
 
-        for data in train_loader:
-            pass
+        # initialize trainer
+        trainer = BCICAHRTrainer(configs, exp_dir, args.resume_ckpt)
+
+    # training model
+    trainer.forward(train_loader, val_loader)
 
     return
 
