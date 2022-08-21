@@ -16,18 +16,19 @@ loader:
 G:
   name: style_translator_cahr
   params:
-    image_size:      1024
+    full_size:       1024
+    crop_size:       512
     input_channels:  3
     output_channels: 3
     init_channels:   32
     levels:          4
-    encoder1_blocks: 3
+    encoder1_blocks: 2
     style_type:      mod
     style_linear:    true
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   false
+    output_lowres:   true
   init:
     init_type: normal
     init_gain: 0.02
@@ -65,7 +66,7 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.00001
+  min_lr: 0.0
   warmup: 60
 
 trainer:
