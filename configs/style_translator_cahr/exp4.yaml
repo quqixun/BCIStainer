@@ -1,10 +1,12 @@
 ---
 
 
-exp:  style_translator/exp6
+exp:  style_translator_cahr/exp3
 seed: 42
 
 loader:
+  crop_size:   512
+  random_crop: true
   norm_method: global_minmax
   train_batch: 8
   val_batch:   1
@@ -12,9 +14,10 @@ loader:
   pin_memory:  true
 
 G:
-  name: style_translator
+  name: style_translator_cahr
   params:
     full_size:       1024
+    crop_size:       512
     input_channels:  3
     output_channels: 3
     init_channels:   32
@@ -26,18 +29,18 @@ G:
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
+    mask_dec_input:  dec1
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: ms_gan
+  name: patch_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
-    num_depths:     3
   init:
     init_type: normal
     init_gain: 0.02
@@ -61,18 +64,19 @@ optimizer:
   params:
     lr:           0.001
     betas:        [0.5, 0.9]
-    weight_decay: 0.05
+    weight_decay: 0.0
 
 scheduler:
   min_lr: 0.0
-  warmup: 60
+  warmup: 30
 
 trainer:
-  epochs:     200
-  accum_iter: 1
+  epochs:     100
+  accum_iter: 4
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  infer_mode: infer_crop
   ckpt_freq:  1000
   print_freq: 100
 

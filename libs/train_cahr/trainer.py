@@ -4,13 +4,13 @@ import datetime
 import torch.nn.functional as F
 
 from ..utils import *
-from .base import BCICAHRBaseTrainer
 
 
-class BCICAHRTrainer(BCICAHRBaseTrainer):
+class BCICAHRTrainer(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
         super(BCICAHRTrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        self.infer_mode = self.configs.trainer.infer_mode
 
     def forward(self, train_loader, val_loader):
 
@@ -20,28 +20,28 @@ class BCICAHRTrainer(BCICAHRBaseTrainer):
         for epoch in range(self.start_epoch, self.epochs):
             train_metrics = self._train_epoch(train_loader, epoch)
 
-        #     # save model with best val psnr
-        #     val_model = self.Gema if self.ema else self.G
-        #     val_metrics = self._val_epoch(val_model, val_loader, epoch)
-        #     if val_metrics['psnr'] > best_val_psnr:
-        #         best_val_psnr = val_metrics['psnr']
-        #         self._save_model(val_model, 'best_psnr')
-        #         print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-        #         best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
+            # save model with best val psnr
+            val_model = self.Gema if self.ema else self.G
+            val_metrics = self._val_epoch(val_model, val_loader, epoch)
+            if val_metrics['psnr'] > best_val_psnr:
+                best_val_psnr = val_metrics['psnr']
+                self._save_model(val_model, 'best_psnr')
+                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
+                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
 
-        #     # save checkpoint regularly
-        #     if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
-        #         self._save_checkpoint(epoch)
+            # save checkpoint regularly
+            if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
+                self._save_checkpoint(epoch)
 
-        #     # write logs
-        #     self._save_logs(epoch, train_metrics, val_metrics)
-        #     print()
+            # write logs
+            self._save_logs(epoch, train_metrics, val_metrics)
+            print()
 
-        # print(best_psnr_msg)
+        print(best_psnr_msg)
 
-        # total_time = time.time() - start_time
-        # total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        # print('- Training time {}'.format(total_time_str))
+        total_time = time.time() - start_time
+        total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+        print('- Training time {}'.format(total_time_str))
 
         return
 
@@ -63,32 +63,33 @@ class BCICAHRTrainer(BCICAHRBaseTrainer):
                 self._adjust_learning_rate(iter_step / len(loader) + epoch)
 
             # forward
-            he, ihc, level, he_crop, crop_idx = [d.to(self.device) for d in data]
-            multi_outputs = self.G(he, he_crop, crop_idx)
-            if len(multi_outputs) == 2:
-                ihc_hr_pred, level_pred = multi_outputs
-                ihc_lr_pred = None
-            elif len(multi_outputs) == 3:
-                ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
+            with torch.autograd.set_detect_anomaly(True):
+                he, ihc, level, he_crop, crop_idx = [d.to(self.device) for d in data]
+                multi_outputs = self.G(he, he_crop, crop_idx, mode='train')
+                if len(multi_outputs) == 2:
+                    ihc_hr_pred, level_pred = multi_outputs
+                    ihc_lr_pred = None
+                elif len(multi_outputs) == 3:
+                    ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
 
-            # update D
-            self._set_requires_grad(self.D, True)
-            D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
-            loss_D = (D_fake + D_real) * 0.5
-            loss_D.backward()
-            if (iter_step + 1) % self.accum_iter == 0:
-                self.D_opt.step()
+                # update D
+                self._set_requires_grad(self.D, True)
+                D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
+                loss_D = (D_fake + D_real) * 0.5
+                loss_D.backward()
+                if (iter_step + 1) % self.accum_iter == 0:
+                    self.D_opt.step()
 
-            # update G
-            self._set_requires_grad(self.D, False)
-            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-            G_cls = self.cls_loss(level, level_pred)
-            loss_G = G_gan + G_rec + G_sim + G_cls
-            loss_G.backward()
-            if (iter_step + 1) % self.accum_iter == 0:
-                self.G_opt.step()
-                if self.ema:
-                    self.Gema.update()
+                # update G
+                self._set_requires_grad(self.D, False)
+                G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
+                G_cls = self.cls_loss(level, level_pred)
+                loss_G = G_gan + G_rec + G_sim + G_cls
+                loss_G.backward()
+                if (iter_step + 1) % self.accum_iter == 0:
+                    self.G_opt.step()
+                    if self.ema:
+                        self.Gema.update()
 
             # update logger
             logger.update(
@@ -117,8 +118,9 @@ class BCICAHRTrainer(BCICAHRBaseTrainer):
 
         data_iter = logger.log_every(loader)
         for _, data in enumerate(data_iter):
-            he, ihc, _, he_crop, crop_idx = [d.to(self.device) for d in data]
-            multi_outputs = self.G(he, he_crop, crop_idx)
+            he, ihc, he_crop, crop_idx = [d.to(self.device) for d in data]
+            he_crop, crop_idx = he_crop[0], crop_idx[0]
+            multi_outputs = self.G(he, he_crop, crop_idx, self.infer_mode)
             ihc_hr_pred = multi_outputs[0]
 
             psnr, ssim = self.eval_metrics(ihc, ihc_hr_pred)

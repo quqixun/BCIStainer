@@ -4,7 +4,6 @@ import datetime
 import torch.nn.functional as F
 
 from ..utils import *
-from .base import BCIBaseTrainer
 
 
 class BCITrainer(BCIBaseTrainer):

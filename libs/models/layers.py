@@ -19,8 +19,9 @@ class ConvNormAct(nn.Module):
         self.conv_type = conv_type
         if self.conv_type == 'conv2d':
             self.conv = nn.Sequential(
+                nn.ReflectionPad2d(padding),
                 nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
-                          stride=stride, padding=padding, bias=bias),
+                          stride=stride, padding=0, bias=bias),
                 norm_layer(out_dims),
                 nn.LeakyReLU(0.2, True)
             )
@@ -40,8 +41,8 @@ class ConvNormAct(nn.Module):
                 out = F.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=True)
                 out = self.conv(out)
             elif self.sampling == 'up':
-                out = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
-                out = self.conv(out)
+                out = self.conv(x)
+                out = F.interpolate(out, scale_factor=2, mode='bilinear', align_corners=True)
             else:
                 out = self.conv(x)
         else:  # self.conv_type == 'convTranspose2d'
@@ -56,11 +57,13 @@ class ResnetBlock(nn.Module):
         super(ResnetBlock, self).__init__()
 
         self.conv = nn.Sequential(
-            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=1, bias=use_bias),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
             norm_layer(conv_dimss),
             nn.LeakyReLU(0.2, True),
             nn.Dropout(dropout),
-            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=1, bias=use_bias),
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
             norm_layer(conv_dimss),
             nn.LeakyReLU(0.2, True)
         )
@@ -93,8 +96,14 @@ class ResnetAdaBlock(nn.Module):
         self.style1  = AdaIN(style_dims, conv_dims)
         self.style2  = AdaIN(style_dims, conv_dims)
         self.dropout = nn.Dropout(dropout) if dropout > 0 else None
-        self.conv1   = nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=1, bias=use_bias)
-        self.conv2   = nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=1, bias=use_bias)
+        self.conv1   = nn.Sequential(
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias)
+        )
+        self.conv2   = nn.Sequential(
+            nn.ReflectionPad2d(1),
+            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias)
+        )
 
     def forward(self, x):
         x_in, style = x
@@ -141,7 +150,7 @@ class ModConv2d(nn.Module):
         self.use_bias = use_bias
         self.demodulate = demodulate
         self.kernel_size = kernel_size
-        self.padding = kernel_size // 2
+        self.padding = (kernel_size // 2,) * 4
         self.weight = EqualizedWeight([out_dim, in_dim, kernel_size, kernel_size])
         self.eps = eps
 
@@ -164,7 +173,9 @@ class ModConv2d(nn.Module):
         weights = weights.reshape(b * self.out_dim, *ws)
 
         x = x.reshape(1, -1, h, w)
-        x = F.conv2d(x, weights, padding=self.padding, groups=b)
+        x = F.pad(x, self.padding, mode='reflect')
+        x = F.conv2d(x, weights, padding=0, groups=b)
+        # x = F.conv2d(x, weights, padding=self.padding, groups=b)
         x = x.reshape(-1, self.out_dim, h, w)
 
         if self.use_bias:

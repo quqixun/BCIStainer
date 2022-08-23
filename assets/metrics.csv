@@ -1,8 +1,8 @@
 model,exp,pred,metrics,psnr_avg,psnr_std,ssim_avg,ssim_std
+style_translator,exp5,model_best_psnr_tta,./evaluations/style_translator/exp5/model_best_psnr_tta/metrics.csv,23.09565075243272,4.957167604826662,0.5755018294212619,0.18019645929514247
 style_translator,exp4,model_best_psnr_tta,./evaluations/style_translator/exp4/model_best_psnr_tta/metrics.csv,23.06629829819877,4.744044519467495,0.5573663669975261,0.18414304648898241
-style_translator2,exp3,model_best_psnr_tta,./evaluations/style_translator2/exp3/model_best_psnr_tta/metrics.csv,23.04890616280106,4.9758297269554275,0.5749657713489714,0.1784984884228179
 style_translator,exp2,model_best_psnr_tta,./evaluations/style_translator/exp2/model_best_psnr_tta/metrics.csv,23.00921634633975,4.777640553908688,0.5476832247411195,0.1894228131108367
-style_translator2,exp1,model_best_psnr_tta,./evaluations/style_translator2/exp1/model_best_psnr_tta/metrics.csv,22.90160440184334,5.117018452448401,0.5777403731110397,0.17775885057896437
-style_translator2,exp4,model_best_psnr_tta,./evaluations/style_translator2/exp4/model_best_psnr_tta/metrics.csv,22.89056885048309,5.21958767457725,0.5799953593784533,0.17893374403365728
 style_translator,exp3,model_best_psnr_tta,./evaluations/style_translator/exp3/model_best_psnr_tta/metrics.csv,22.86103083594854,4.834774504801982,0.5380253453054601,0.19271079215890516
-style_translator2,exp2,model_best_psnr_tta,./evaluations/style_translator2/exp2/model_best_psnr_tta/metrics.csv,22.80937398888522,5.064538536995046,0.575084224210099,0.17712881807829972
+style_translator,exp7,model_best_psnr_tta,./evaluations/style_translator/exp7/model_best_psnr_tta/metrics.csv,22.858005394810423,5.060364510708081,0.5578094146285165,0.18587476973350184
+style_translator,exp8,model_best_psnr_tta,./evaluations/style_translator/exp8/model_best_psnr_tta/metrics.csv,22.591371407613003,4.902782980078271,0.5487300875384861,0.1849418367353995
+style_translator,exp6,model_best_psnr_tta,./evaluations/style_translator/exp6/model_best_psnr_tta/metrics.csv,22.46606857030496,4.881504748884183,0.5463265269722322,0.18525903872523056

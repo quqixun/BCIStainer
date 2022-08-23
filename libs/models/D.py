@@ -33,10 +33,6 @@ class MultiscaleDiscriminator(nn.Module):
             )
             setattr(self, 'layer' + str(i), netD.model)
 
-        # self.downsample = nn.AvgPool2d(
-        #     3, stride=2, padding=1, count_include_pad=False
-        # )
-
     def singleD_forward(self, model, input):
         return [model(input)]
 
@@ -47,7 +43,6 @@ class MultiscaleDiscriminator(nn.Module):
             model = getattr(self, 'layer' + str(self.num_depths - 1 - i))
             result.append(self.singleD_forward(model, input_downsampled))
             if i != (self.num_depths - 1):
-                # input_downsampled = self.downsample(input_downsampled)
                 input_downsampled = F.interpolate(
                     input_downsampled, scale_factor=0.5,
                     mode='bilinear', align_corners=True

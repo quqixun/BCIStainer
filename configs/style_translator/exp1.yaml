@@ -25,7 +25,7 @@ G:
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   false
+    output_lowres:   true
   init:
     init_type: normal
     init_gain: 0.02
@@ -63,7 +63,7 @@ optimizer:
     weight_decay: 0.05
 
 scheduler:
-  min_lr: 0.00001
+  min_lr: 0.0
   warmup: 60
 
 trainer:

@@ -123,7 +123,6 @@ class BCICAHRDataset(Dataset):
             ].copy()
             he_crop_list.append(he_crop)
         he_crop = np.array(he_crop_list)
-        he = np.array([he] * len(he_crop))
 
         # print(he.shape, he_crop.shape)
 
@@ -145,7 +144,7 @@ class BCICAHRDataset(Dataset):
         # plt.show()
 
         he       = normalize_image(he, 'he', self.norm_method)
-        he       = he.transpose(0, 3, 1, 2).astype(np.float32)
+        he       = he.transpose(2, 0, 1).astype(np.float32)
         ihc      = normalize_image(ihc, 'ihc', self.norm_method)
         ihc      = ihc.transpose(2, 0, 1).astype(np.float32)
         he_crop  = normalize_image(he_crop, 'he', self.norm_method)

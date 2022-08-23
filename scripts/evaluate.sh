@@ -2,10 +2,10 @@
 
 
 config_file_list=(
-    ./configs/style_translator/exp5.yaml
-    ./configs/style_translator/exp6.yaml
-    ./configs/style_translator/exp7.yaml
-    ./configs/style_translator/exp8.yaml
+    ./configs/style_translator/exp1.yaml
+    ./configs/style_translator/exp2.yaml
+    ./configs/style_translator/exp3.yaml
+    ./configs/style_translator/exp4.yaml
 )
 
 

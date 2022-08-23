@@ -112,9 +112,10 @@ class StyleTranslator(nn.Module):
         self.output_lowres = output_lowres
         if self.output_lowres:
             self.lowres_outconv = nn.Sequential(
+                nn.ReflectionPad2d(1),
                 nn.Conv2d(
                     conv_dims, output_channels,
-                    kernel_size=3, padding=1
+                    kernel_size=3, padding=0
                 ),
                 nn.Tanh()
             )
@@ -136,9 +137,10 @@ class StyleTranslator(nn.Module):
         self.decoder2 = nn.Sequential(*decoder2)
 
         self.highres_outconv = nn.Sequential(
+            nn.ReflectionPad2d(3),
             nn.Conv2d(
                 init_channels, output_channels,
-                kernel_size=7, padding=3
+                kernel_size=7, padding=0
             ),
             nn.Tanh()
         )
@@ -180,7 +182,8 @@ class StyleTranslatorCAHR(nn.Module):
         style_blocks=9,
         norm_type='batch',
         dropout=0.2,
-        output_lowres=True
+        output_lowres=True,
+        mask_dec_input='dec1'
     ):
         super(StyleTranslatorCAHR, self).__init__()
 
@@ -214,7 +217,7 @@ class StyleTranslatorCAHR(nn.Module):
         self.encoder1 = nn.Sequential(*encoder1)
 
         style_dims = conv_dims = out_dims
-        total_encoder_blocks = int(np.log2(crop_size / 8))
+        total_encoder_blocks = int(np.log2(full_size / 8))
         num_encoder2_blocks = total_encoder_blocks - encoder1_blocks
 
         encoder2 = []
@@ -263,9 +266,10 @@ class StyleTranslatorCAHR(nn.Module):
         self.output_lowres = output_lowres
         if self.output_lowres:
             self.lowres_outconv = nn.Sequential(
+                nn.ReflectionPad2d(1),
                 nn.Conv2d(
                     conv_dims, output_channels,
-                    kernel_size=3, padding=1
+                    kernel_size=3, padding=0
                 ),
                 nn.Tanh()
             )
@@ -287,18 +291,23 @@ class StyleTranslatorCAHR(nn.Module):
         self.decoder2 = nn.Sequential(*decoder2)
 
         self.highres_outconv = nn.Sequential(
+            nn.ReflectionPad2d(3),
             nn.Conv2d(
                 init_channels, output_channels,
-                kernel_size=7, padding=3
+                kernel_size=7, padding=0
             ),
             nn.Tanh()
         )
 
+        assert mask_dec_input in ['dec1', 'enc1'], \
+            f'mask_dec_input {mask_dec_input} is invalid'
+        self.mask_dec_input = mask_dec_input
         self.mask_decoder = deepcopy(self.decoder2)
         self.mask_outconv = nn.Sequential(
+            nn.ReflectionPad2d(3),
             nn.Conv2d(
                 init_channels, 1,
-                kernel_size=7, padding=3
+                kernel_size=7, padding=0
             ),
             nn.Sigmoid()
         )
@@ -321,16 +330,12 @@ class StyleTranslatorCAHR(nn.Module):
         dec2 = self.decoder2(dec1)
         ihc_full = self.highres_outconv(dec2)
 
-        mask_crop = self.mask_decoder(dec1)
-        mask_crop = self.mask_outconv(mask_crop)
-
         if self.output_lowres:
             ihc_lr = self.lowres_outconv(dec1)
             outputs_dict['ihc_lr'] = ihc_lr
         
-        outputs_dict['level']     = level
-        outputs_dict['ihc_full']  = ihc_full
-        outputs_dict['mask_crop'] = mask_crop
+        outputs_dict['level']    = level
+        outputs_dict['ihc_full'] = ihc_full
         return outputs_dict
 
     def _forward_crop(self, he_crop, style):
@@ -341,45 +346,112 @@ class StyleTranslatorCAHR(nn.Module):
         if self.style_type == 'none':
             dec1 = self.decoder1(enc1)
         else:
+            if style.size(0) != he_crop.size(0):
+                style = style.repeat(he_crop.size(0), 1)
             dec1, _ = self.decoder1([enc1, style])
         
         dec2 = self.decoder2(dec1)
         ihc_crop = self.highres_outconv(dec2)
-        return ihc_crop
 
-    def _merge(self, ihc_full, ihc_crop, mask_crop, crop_idxs):
+        if self.mask_dec_input == 'dec1':
+            mask_dec = self.mask_decoder(dec1)
+        elif self.mask_dec_input == 'enc1':
+            mask_dec = self.mask_decoder(enc1)
+        mask_crop = self.mask_outconv(mask_dec)
 
-        ihc_hr = F.interpolate(
-            ihc_full, size=(self.full_size, self.full_size),
-            mode='bilinear', align_corners=True
-        )
+        outputs_dict = {
+            'ihc_crop': ihc_crop,
+            'mask_crop': mask_crop
+        }
+        return outputs_dict
 
+    def _train_merge(self, ihc_full, ihc_crop, mask_crop, crop_idxs):
+
+        ihc_hr_list = []
         for i in range(ihc_full.size(0)):
             row1, col1 = crop_idxs[i]
             row2, col2 = crop_idxs[i] + self.crop_size
-            ihc_hr_crop = ihc_hr[i, :, row1:row2, col1:col2]
-            ihc_hr_crop *= 1 - mask_crop[i]
-            ihc_hr_crop += ihc_crop[i] * mask_crop[i]
-            ihc_hr[i, :, row1:row2, col1:col2] = ihc_hr_crop
+            row_pad = [row1, self.full_size - row2]
+            col_pad = [col1, self.full_size - col2]
 
+            ihc_crop_pad  = F.pad(ihc_crop[i], col_pad + row_pad)
+            mask_crop_pad = F.pad(mask_crop[i], col_pad + row_pad)
+
+            ihc_full_ = ihc_full[i] * (1 - mask_crop_pad)
+            ihc_crop_ = ihc_crop_pad * mask_crop_pad
+            ihc_hr_   = ihc_full_ + ihc_crop_
+            ihc_hr_list.append(ihc_hr_)
+
+        ihc_hr = torch.stack(ihc_hr_list)
         return ihc_hr
 
-    def forward(self, he, he_crop, crop_idxs):
+    def _infer_full_merge(self, ihc_full, ihc_crop, mask_crop, crop_idxs):
+        assert ihc_full.size(0) == 1
 
-        he_ = F.interpolate(
-            he, size=(self.crop_size, self.crop_size),
-            mode='bilinear', align_corners=True
-        )
+        ihc_full = ihc_full.squeeze(0)
+        ihc_hr   = torch.zeros_like(ihc_full)
 
-        full_outputs = self._forward_full(he_)
-        level     = full_outputs['level']
-        ihc_full  = full_outputs['ihc_full']
-        mask_crop = full_outputs['mask_crop']
-        style     = full_outputs.get('style', None)
-        ihc_lr    = full_outputs.get('ihc_lr', None)
+        for i in range(ihc_crop.size(0)):
+            row1, col1 = crop_idxs[i]
+            row2, col2 = crop_idxs[i] + self.crop_size
+            row_pad = [row1, self.full_size - row2]
+            col_pad = [col1, self.full_size - col2]
 
-        ihc_crop = self._forward_crop(he_crop, style)
-        ihc_hr = self._merge(ihc_full, ihc_crop, mask_crop, crop_idxs)
+            ihc_crop_pad  = F.pad(ihc_crop[i], col_pad + row_pad)
+            mask_crop_pad = F.pad(mask_crop[i], col_pad + row_pad)
+
+            ihc_full_ = ihc_full * (1 - mask_crop_pad)
+            ihc_crop_ = ihc_crop_pad * mask_crop_pad
+            ihc_hr_   = ihc_full_ + ihc_crop_
+            ihc_hr   += ihc_hr_
+
+        ihc_hr /= ihc_crop.size(0)
+        return ihc_hr.unsqueeze(0)
+
+    def _infer_crop_merge(self, ihc_full, ihc_crop, mask_crop, crop_idxs):
+        assert ihc_full.size(0) == 1
+
+        ihc_full  = ihc_full.squeeze(0)
+        ihc_hr    = torch.zeros_like(ihc_full)
+        ihc_count = torch.zeros_like(ihc_full)
+
+        for i in range(ihc_crop.size(0)):
+            row1, col1 = crop_idxs[i]
+            row2, col2 = crop_idxs[i] + self.crop_size
+
+            ihc_full_crop_ = ihc_full[:, row1:row2, col1:col2]
+            ihc_full_crop_ = ihc_full_crop_ * (1 - mask_crop[i])
+            ihc_crop_ = ihc_crop[i] * mask_crop[i]
+            ihc_hr_   = ihc_full_crop_ + ihc_crop_
+
+            ihc_hr[:, row1:row2, col1:col2]    += ihc_hr_
+            ihc_count[:, row1:row2, col1:col2] += 1.0
+
+        ihc_hr /= ihc_count
+        return ihc_hr.unsqueeze(0)
+
+    def forward(self, he, he_crop, crop_idxs, mode):
+        assert mode in ['train', 'infer_full', 'infer_crop'], \
+            f'mode {mode} is invalid'
+
+        full_outputs = self._forward_full(he)
+        level    = full_outputs['level']
+        ihc_full = full_outputs['ihc_full']
+        style    = full_outputs.get('style', None)
+        ihc_lr   = full_outputs.get('ihc_lr', None)
+
+        crop_outputs = self._forward_crop(he_crop, style)
+        ihc_crop  = crop_outputs['ihc_crop']
+        mask_crop = crop_outputs['mask_crop']
+
+        if mode == 'train':
+            merge_func = self._train_merge
+        elif mode == 'infer_full':
+            merge_func = self._infer_full_merge
+        elif mode == 'infer_crop':
+            merge_func = self._infer_crop_merge
+
+        ihc_hr = merge_func(ihc_full, ihc_crop, mask_crop, crop_idxs)
 
         if self.output_lowres:
             return ihc_hr, ihc_lr, level
