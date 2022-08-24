@@ -1,1 +1,2 @@
-from .evaluator import *
+from .evaluator_cahr import *
+from .evaluator_basic import *

@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from ..utils import *
 
 
-class BCITrainer(BCIBaseTrainer):
+class BCIBasicTrainer(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
-        super(BCITrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        super(BCIBasicTrainer, self).__init__(configs, exp_dir, resume_ckpt)
 
     def forward(self, train_loader, val_loader):
 

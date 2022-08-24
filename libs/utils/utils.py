@@ -55,6 +55,9 @@ def check_evaluate_args(args):
     if args.model_name not in model_name_list:
         raise ValueError(f'model_name {args.model_name} is not supportted')
 
+    if args.evaluator not in ['basic', 'cahr']:
+        raise ValueError('evaluator is not one of basic or cahr')
+
     return
 
 
@@ -82,7 +85,13 @@ def normalize_image(image, image_type, norm_method):
         raise ValueError('unknown image_type')
 
     if norm_method == 'channel_zscore':
-        image_norm = (image - stat['channel_mean']) / stat['channel_std']
+        if image.ndims == 3:
+            mean_ = stat['channel_mean']
+            std_  = stat['channel_std']
+        elif image.ndims == 4:
+            mean_ = stat['channel_mean'][None, ...]
+            std_  = stat['channel_std'][None, ...]
+        image_norm = (image - mean_) / std_
     elif norm_method == 'global_zscore':
         image_norm = (image - stat['global_mean']) / stat['global_std']
     elif norm_method == 'global_minmax':
@@ -105,7 +114,13 @@ def unnormalize_image(image, image_type, norm_method):
         raise ValueError('unknown image_type')
 
     if norm_method == 'channel_zscore':
-        image_unnorm = image * stat['channel_std'] + stat['channel_mean']
+        if image.ndims == 3:
+            mean_ = stat['channel_mean']
+            std_  = stat['channel_std']
+        elif image.ndims == 4:
+            mean_ = stat['channel_mean'][None, ...]
+            std_  = stat['channel_std'][None, ...]
+        image_unnorm = image * std_ + mean_
     elif norm_method == 'global_zscore':
         image_unnorm = image * stat['global_std'] + stat['global_mean']
     elif norm_method == 'global_minmax':
@@ -116,3 +131,41 @@ def unnormalize_image(image, image_type, norm_method):
         raise ValueError('unknown norm_method')
 
     return image_unnorm
+
+
+def tta(image, no):
+    if no == 0:
+        return image
+    elif no == 1:
+        return np.rot90(image, 1)
+    elif no == 2:
+        return np.rot90(image, 2)
+    elif no == 3:
+        return np.rot90(image, 3)
+    elif no == 4:
+        return np.fliplr(image)
+    elif no == 5:
+        return np.flipud(image)
+    elif no == 6:
+        return image.transpose(1, 0, 2)
+    else:
+        raise NotImplemented('unknown no for tta')
+
+
+def untta(image, no):
+    if no == 0:
+        return image
+    elif no == 1:
+        return np.rot90(image, 3)
+    elif no == 2:
+        return np.rot90(image, 2)
+    elif no == 3:
+        return np.rot90(image, 1)
+    elif no == 4:
+        return np.fliplr(image)
+    elif no == 5:
+        return np.flipud(image)
+    elif no == 6:
+        return image.transpose(1, 0, 2)
+    else:
+        raise NotImplemented('unknown no for untta')

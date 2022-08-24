@@ -175,7 +175,6 @@ class ModConv2d(nn.Module):
         x = x.reshape(1, -1, h, w)
         x = F.pad(x, self.padding, mode='reflect')
         x = F.conv2d(x, weights, padding=0, groups=b)
-        # x = F.conv2d(x, weights, padding=self.padding, groups=b)
         x = x.reshape(-1, self.out_dim, h, w)
 
         if self.use_bias:

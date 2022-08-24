@@ -3,7 +3,7 @@ import json
 import math
 import torch
 
-from ..utils import *
+from .losses import *
 from ema_pytorch import EMA
 from ..models import define_G, define_D
 

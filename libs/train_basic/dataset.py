@@ -9,10 +9,10 @@ from ..utils import normalize_image
 from torch.utils.data import Dataset, DataLoader
 
 
-class BCIDataset(Dataset):
+class BCIBasicDataset(Dataset):
 
     def __init__(self, data_dir, augment=False, norm_method='global_minmax'):
-        super(BCIDataset, self).__init__()
+        super(BCIBasicDataset, self).__init__()
 
         he_dir  = opj(data_dir, 'HE')
         ihc_dir = opj(data_dir, 'IHC')
@@ -107,8 +107,10 @@ def get_dataloader(mode, data_dir, configs):
         shuffle    = False
         augment    = False
 
-    dataset = BCIDataset(
-        data_dir, augment, configs.norm_method
+    dataset = BCIBasicDataset(
+        data_dir=data_dir,
+        augment=augment,
+        norm_method=configs.norm_method
     )
 
     dataloader = DataLoader(

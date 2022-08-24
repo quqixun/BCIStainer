@@ -2,7 +2,7 @@ import os
 import numpy as np
 import imageio.v2 as iio
 import albumentations as A
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from itertools import product
 from os.path import join as opj
@@ -56,10 +56,9 @@ class BCICAHRDataset(Dataset):
         self.crop_range  = self.full_size - self.crop_size
 
         if not self.random_crop:
-            crop_size = crop_size // 2
             upper_idx = self.full_size - self.crop_size + 1
-            self.crop_row_idxs  = list(range(0, upper_idx, crop_size))
-            self.crop_col_idxs  = list(range(0, upper_idx, crop_size))
+            self.crop_row_idxs  = list(range(0, upper_idx, crop_size // 2))
+            self.crop_col_idxs  = list(range(0, upper_idx, crop_size // 2))
             self.crop_rowx_cols = list(product(
                 self.crop_row_idxs, self.crop_col_idxs
             ))

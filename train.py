@@ -2,8 +2,8 @@ import os
 import argparse
 
 from libs.utils import *
-from libs.train_basic import *
 from libs.train_cahr import *
+from libs.train_basic import *
 from omegaconf import OmegaConf
 
 
@@ -22,7 +22,7 @@ def main(args):
         val_loader   = get_dataloader('val',   args.val_dir,   configs.loader)
 
         # initialize trainer
-        trainer = BCITrainer(configs, exp_dir, args.resume_ckpt)
+        trainer = BCIBasicTrainer(configs, exp_dir, args.resume_ckpt)
 
     elif args.trainer == 'cahr':
         # loads dataloder for training and validation

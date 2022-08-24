@@ -8,25 +8,40 @@ import imageio.v2 as iio
 from tqdm import tqdm
 from ema_pytorch import EMA
 from ..models import define_G
+from itertools import product
 from os.path import join as opj
 from skimage.metrics import structural_similarity
 from skimage.metrics import peak_signal_noise_ratio
-from ..utils import normalize_image, unnormalize_image
+from ..utils import normalize_image, unnormalize_image, tta, untta
 
 
-class BCIEvaluator(object):
+class BCICAHREvaluator(object):
 
     def __init__(self, configs, model_path, apply_tta=False):
 
-        self.apply_tta = apply_tta
+        self.apply_tta   = apply_tta
+        self.infer_mode  = configs.trainer.infer_mode
+        self.norm_method = configs.loader.norm_method
 
         # model
         self.G_params = configs.G
         self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.ema      = configs.trainer.get('ema', False)
-        self.norm_method = configs.loader.norm_method
-
+        self.ema      = configs.trainer.ema
         self._load_model(model_path)
+
+        # dataset
+        self.full_size = 1024
+        self.crop_size = configs.loader.crop_size
+        self.crop_range  = self.full_size - self.crop_size
+        upper_idx = self.full_size - self.crop_size + 1
+        self.crop_row_idxs  = list(range(0, upper_idx, self.crop_size // 2))
+        self.crop_col_idxs  = list(range(0, upper_idx, self.crop_size // 2))
+        self.crop_rowx_cols = list(product(
+            self.crop_row_idxs, self.crop_col_idxs
+        ))
+        self.crop_idxs = torch.LongTensor(
+            np.array(self.crop_rowx_cols)
+        ).to(self.device)
 
     def _load_model(self, model_path):
 
@@ -71,7 +86,6 @@ class BCIEvaluator(object):
                 self.predict(he_path, ihc_pred_path)
 
             psnr, ssim = self.evaluate(ihc_path, ihc_pred_path)
-
             metrics_list.append([he_path, ihc_path, ihc_pred_path, psnr, ssim])
 
         columns = ['he', 'ihc', 'ihc_pred', 'psnr', 'ssim']
@@ -92,17 +106,18 @@ class BCIEvaluator(object):
     @torch.no_grad()
     def predict(self, he_path, ihc_pred_path):
 
-        he_ori = iio.imread(he_path)
+        he_ori  = iio.imread(he_path)
         he = normalize_image(he_ori, 'he', self.norm_method)
         he = he.transpose(2, 0, 1).astype(np.float32)[None, ...]
         he = torch.Tensor(he).to(self.device)
 
-        try:
-            multi_outputs = self.G(he)
-            ihc_pred = multi_outputs[0]
-        except:
-            ihc_pred = self.G(he)
+        he_crop = self._crop(he_ori)
+        he_crop = normalize_image(he_crop, 'he', self.norm_method)
+        he_crop = he_crop.transpose(0, 3, 1, 2).astype(np.float32)
+        he_crop = torch.Tensor(he_crop).to(self.device)
 
+        multi_outputs = self.G(he, he_crop, self.crop_idxs, self.infer_mode)
+        ihc_pred = multi_outputs[0]
         ihc_pred = ihc_pred[0].cpu().numpy()
         ihc_pred = ihc_pred.transpose(1, 2, 0)
         ihc_pred = unnormalize_image(ihc_pred, 'ihc', self.norm_method)
@@ -119,23 +134,25 @@ class BCIEvaluator(object):
 
         ihc_pred_tta = np.zeros_like(he_ori).astype(np.float32)
         for i in range(7):
-            he_tta = self.tta(he_ori, i)
+            he_tta = tta(he_ori, i)
             he = normalize_image(he_tta, 'he', self.norm_method)
             he = he.transpose(2, 0, 1).astype(np.float32)[None, ...]
             he = torch.Tensor(he).to(self.device)
 
-            try:
-                multi_outputs = self.G(he)
-                ihc_pred = multi_outputs[0]
-            except:
-                ihc_pred = self.G(he)
+            he_crop = self._crop(he_tta)
+            he_crop = normalize_image(he_crop, 'he', self.norm_method)
+            he_crop = he_crop.transpose(0, 3, 1, 2).astype(np.float32)
+            he_crop = torch.Tensor(he_crop).to(self.device)
 
+            multi_outputs = self.G(he, he_crop, self.crop_idxs, self.infer_mode)
+            ihc_pred = multi_outputs[0]
             ihc_pred = ihc_pred[0].cpu().numpy()
             ihc_pred = ihc_pred.transpose(1, 2, 0)
             ihc_pred = unnormalize_image(ihc_pred, 'ihc', self.norm_method)
-            ihe_pred_untta = self.untta(ihc_pred, i)
+
+            ihe_pred_untta = untta(ihc_pred, i)
             ihc_pred_tta += ihe_pred_untta
-        
+
         ihc_pred_tta /= 7
         ihc_pred_tta = ihc_pred_tta.astype(np.uint8)
         iio.imwrite(ihc_pred_path, ihc_pred_tta)
@@ -151,42 +168,15 @@ class BCIEvaluator(object):
 
         return psnr, ssim
 
-    @staticmethod
-    def tta(image, no):
+    def _crop(self, he):
 
-        if no == 0:
-            return image
-        elif no == 1:
-            return np.rot90(image, 1)
-        elif no == 2:
-            return np.rot90(image, 2)
-        elif no == 3:
-            return np.rot90(image, 3)
-        elif no == 4:
-            return np.fliplr(image)
-        elif no == 5:
-            return np.flipud(image)
-        elif no == 6:
-            return image.transpose(1, 0, 2)
-        else:
-            raise NotImplemented('unknown no fo tta')
+        he_crop_list = []
+        for row_idx, col_idx in self.crop_rowx_cols:
+            he_crop = he[
+                row_idx:row_idx + self.crop_size,
+                col_idx:col_idx + self.crop_size
+            ].copy()
+            he_crop_list.append(he_crop)
+        he_crop = np.array(he_crop_list)
 
-    @staticmethod
-    def untta(image, no):
-
-        if no == 0:
-            return image
-        elif no == 1:
-            return np.rot90(image, 3)
-        elif no == 2:
-            return np.rot90(image, 2)
-        elif no == 3:
-            return np.rot90(image, 1)
-        elif no == 4:
-            return np.fliplr(image)
-        elif no == 5:
-            return np.flipud(image)
-        elif no == 6:
-            return image.transpose(1, 0, 2)
-        else:
-            raise NotImplemented('unknown no fo tta')
+        return he_crop
