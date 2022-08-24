@@ -54,8 +54,6 @@ class SimLoss(nn.Module):
         self.weight = weight
 
         if mode == 'ssim':
-            self.sim = SSIM(window_size=7, sigma=1.5, n_channels=3)
-        elif mode == 'ssim2':
             self.sim = SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'ms_ssim':
             self.sim = MS_SSIM(window_size=7, sigma=1.5, n_channels=3)

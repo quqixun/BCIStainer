@@ -23,7 +23,10 @@ def main(args):
     print(f'- Apply TTA:  {args.apply_tta}', '\n')
 
     # initializes trainer
-    evaluator = BCIEvaluator(configs, model_path, apply_tta)
+    if args.evaluator == 'basic':
+        evaluator = BCIBasicEvaluator(configs, model_path, apply_tta)
+    elif args.evaluator == 'cahr':
+        evaluator = BCICAHREvaluator(configs, model_path, apply_tta)
 
     # generates predictions
     evaluator.forward(args.data_dir, output_dir)
@@ -40,7 +43,10 @@ if __name__ == '__main__':
     parser.add_argument('--output_root', type=str, help='root dir of outputs')
     parser.add_argument('--config_file', type=str, help='yaml path of configs')
     parser.add_argument('--model_name',  type=str, help='name of model')
-    parser.add_argument('--apply_tta',   action='store_true', help='if apply tta')
+    parser.add_argument('--evaluator',   type=str, help='evaluator type, basic or cahr', default='basic')
+    parser.add_argument('--apply_tta',   type=lambda x: (str(x).lower() == 'true'),
+                        help='if apply land use low-resolution features', default=False)
+
     args = parser.parse_args()
 
     check_evaluate_args(args)
