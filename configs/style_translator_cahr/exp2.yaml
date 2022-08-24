@@ -72,7 +72,7 @@ scheduler:
 
 trainer:
   epochs:     100
-  accum_iter: 4
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
