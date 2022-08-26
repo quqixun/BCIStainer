@@ -10,6 +10,7 @@ class BCICAHRTrainer(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
         super(BCICAHRTrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        self.crop_loss  = self.configs.trainer.crop_loss
         self.infer_mode = self.configs.trainer.infer_mode
 
     def forward(self, train_loader, val_loader):
@@ -25,9 +26,10 @@ class BCICAHRTrainer(BCIBaseTrainer):
             val_metrics = self._val_epoch(val_model, val_loader, epoch)
             if val_metrics['psnr'] > best_val_psnr:
                 best_val_psnr = val_metrics['psnr']
+                best_val_ssim = val_metrics['ssim']
                 self._save_model(val_model, 'best_psnr')
                 print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
+                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
@@ -64,18 +66,21 @@ class BCICAHRTrainer(BCIBaseTrainer):
 
             # forward
             with torch.autograd.set_detect_anomaly(True):
-                he, ihc, level, he_crop, crop_idx = [d.to(self.device) for d in data]
+                he, ihc, level, he_crop, ihc_crop, crop_idx = [d.to(self.device) for d in data]
                 multi_outputs = self.G(he, he_crop, crop_idx, mode='train')
-                if len(multi_outputs) == 2:
-                    ihc_hr_pred, level_pred = multi_outputs
+                if not self.G.output_lowres:
+                    ihc_hr_pred, ihc_crop_pred, level_pred = multi_outputs
                     ihc_lr_pred = None
-                elif len(multi_outputs) == 3:
-                    ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
+                else:  # self.G.output_lowres is True
+                    ihc_hr_pred, ihc_lr_pred, ihc_crop_pred, level_pred = multi_outputs
 
                 # update D
                 self._set_requires_grad(self.D, True)
                 D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
                 loss_D = (D_fake + D_real) * 0.5
+                if self.crop_loss:
+                    D_crop_fake, D_crop_real = self._D_loss(he_crop, ihc_crop, ihc_crop_pred)
+                    loss_D += (D_crop_fake + D_crop_real) * 0.5
                 loss_D.backward()
                 if (iter_step + 1) % self.accum_iter == 0:
                     self.D_opt.step()
@@ -83,6 +88,12 @@ class BCICAHRTrainer(BCIBaseTrainer):
                 # update G
                 self._set_requires_grad(self.D, False)
                 G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
+                if self.crop_loss:
+                    G_crop_gan, G_crop_rec, G_crop_sim = self._G_loss(he_crop, ihc_crop, ihc_crop_pred)
+                    G_gan += G_crop_gan
+                    G_rec += G_crop_rec
+                    G_sim += G_crop_sim
+
                 G_cls = self.cls_loss(level, level_pred)
                 loss_G = G_gan + G_rec + G_sim + G_cls
                 loss_G.backward()
@@ -125,7 +136,7 @@ class BCICAHRTrainer(BCIBaseTrainer):
 
             psnr, ssim = self.eval_metrics(ihc, ihc_hr_pred)
             logger.update(psnr=psnr.item(), ssim=ssim.item())
-        
+
         logger_info = {
             key: meter.global_avg
             for key, meter in logger.meters.items()
@@ -155,7 +166,7 @@ class BCICAHRTrainer(BCIBaseTrainer):
 
         # rec
         G_rec = self.rec_loss(ihc, ihc_hr_pred)
-        if ihc_lr_pred is not None:
+        if (ihc_lr_pred is not None) and (self.low_weight > 0):
             _, _, h, w = ihc_lr_pred.size()
             ihc_low = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
             G_rec_low = self.rec_loss(ihc_low, ihc_lr_pred)

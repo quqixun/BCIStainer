@@ -5,6 +5,7 @@ import torch
 
 from .losses import *
 from ema_pytorch import EMA
+from adan_pytorch import Adan
 from ..models import define_G, define_D
 
 
@@ -91,6 +92,8 @@ class BCIBaseTrainer(object):
             opt_func = torch.optim.AdamW
         elif self.opt_name == 'SGD':
             opt_func = torch.optim.SGD
+        elif self.opt_name == 'Adan':
+            opt_func = Adan
         else:
             raise ValueError('Unknown optimizer')
 

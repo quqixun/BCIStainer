@@ -75,7 +75,9 @@ def init_environment(seed):
     return
 
 
-def normalize_image(image, image_type, norm_method):
+def normalize_image(image, image_type, norm_method='global_minmax'):
+    assert norm_method == 'global_minmax', \
+        'only support global_minmax for norm_method'
 
     if image_type == 'he':
         stat = HE_STAT
@@ -104,7 +106,9 @@ def normalize_image(image, image_type, norm_method):
     return image_norm
 
 
-def unnormalize_image(image, image_type, norm_method):
+def unnormalize_image(image, image_type, norm_method='global_minmax'):
+    assert norm_method == 'global_minmax', \
+        'only support global_minmax for norm_method'
 
     if image_type == 'he':
         stat = HE_STAT

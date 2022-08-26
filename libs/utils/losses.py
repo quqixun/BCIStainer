@@ -8,7 +8,7 @@ from piqa import SSIM, MS_SSIM, HaarPSI, PSNR
 
 class CharbonnierLoss(nn.Module):
 
-    def __init__(self, eps=1e-3):
+    def __init__(self, eps=1e-6):
         super(CharbonnierLoss, self).__init__()
         self.eps2 = eps ** 2
 
@@ -33,7 +33,7 @@ class RecLoss(nn.Module):
         elif mode == 'smae':
             self.loss = nn.SmoothL1Loss()
         elif mode == 'charb':
-            self.loss = CharbonnierLoss(eps=1e-3)
+            self.loss = CharbonnierLoss(eps=1e-6)
         elif mode == 'lpips':
             self.loss = lpips.LPIPS(net='alex')
         else:
@@ -43,7 +43,7 @@ class RecLoss(nn.Module):
         loss = self.loss(target, prediction)
         if self.mode == 'lpips':
             loss = loss.mean()
-        return  loss * self.weight
+        return loss * self.weight
 
 
 class SimLoss(nn.Module):
@@ -56,7 +56,7 @@ class SimLoss(nn.Module):
         if mode == 'ssim':
             self.sim = SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'ms_ssim':
-            self.sim = MS_SSIM(window_size=7, sigma=1.5, n_channels=3)
+            self.sim = MS_SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'haarpsi':
             self.sim = HaarPSI(chromatic=True, downsample=True)
         else:
@@ -88,7 +88,7 @@ class MSGANLoss(nn.Module):
         if mode == 'lsgan':
             pass
         elif mode == 'charb':
-            self.charb_loss = CharbonnierLoss(eps=1e-3)
+            self.charb_loss = CharbonnierLoss(eps=1e-6)
         elif mode == 'original':
             pass
         elif mode == 'wgan':
@@ -182,7 +182,7 @@ class FocalLoss(nn.Module):
         preds_softmax = preds_softmax.gather(1, labels.view(-1, 1))
         preds_logsoft = preds_logsoft.gather(1, labels.view(-1, 1))
         alpha = alpha.gather(0, labels.view(-1))
-        loss = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
+        loss  = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
 
         loss = torch.mul(alpha, loss.t())
         if self.size_average:

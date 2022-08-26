@@ -64,10 +64,10 @@ class BCIBasicTrainer(BCIBaseTrainer):
             # forward
             he, ihc, level = [d.to(self.device) for d in data]
             multi_outputs = self.G(he)
-            if len(multi_outputs) == 2:
+            if not self.G.output_lowres:
                 ihc_hr_pred, level_pred = multi_outputs
                 ihc_lr_pred = None
-            elif len(multi_outputs) == 3:
+            else:  # self.G.output_lowres is True
                 ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
 
             # update D
@@ -153,7 +153,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
 
         # rec
         G_rec = self.rec_loss(ihc, ihc_hr_pred)
-        if ihc_lr_pred is not None:
+        if (ihc_lr_pred is not None) and (self.low_weight > 0):
             _, _, h, w = ihc_lr_pred.size()
             ihc_low = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
             G_rec_low = self.rec_loss(ihc_low, ihc_lr_pred)
