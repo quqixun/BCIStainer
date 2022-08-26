@@ -76,6 +76,7 @@ trainer:
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  crop_loss:  false
   infer_mode: infer_full
   ckpt_freq:  1000
   print_freq: 100

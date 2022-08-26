@@ -19,7 +19,8 @@
 
 
 config_file_list=(
-    ./configs/style_translator_cahr/exp4.yaml
+    ./configs/style_translator_cahr/exp12.yaml
+    ./configs/style_translator_cahr/exp16.yaml
 )
 
 for config_file in ${config_file_list[@]}; do

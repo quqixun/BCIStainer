@@ -1,0 +1,17 @@
+model,exp,pred,metrics,psnr_avg,psnr_std,ssim_avg,ssim_std
+style_translator,exp1,model_best_psnr_tta,./evaluations/style_translator/exp1/model_best_psnr_tta/metrics.csv,22.847427234293374,4.839139608309668,0.5397411843184509,0.1904128720791503
+style_translator,exp4,model_best_psnr_tta,./evaluations/style_translator/exp4/model_best_psnr_tta/metrics.csv,22.79365081027847,5.0288575650603,0.558535315996097,0.1874893348953936
+style_translator,exp3,model_best_psnr_tta,./evaluations/style_translator/exp3/model_best_psnr_tta/metrics.csv,22.638643304083043,4.88861839364252,0.5521291997901537,0.18424467768190947
+style_translator,exp2,model_best_psnr_tta,./evaluations/style_translator/exp2/model_best_psnr_tta/metrics.csv,22.600601144211698,4.977494477769879,0.5404159100850131,0.18887014957792167
+style_translator,exp1,model_best_psnr,./evaluations/style_translator/exp1/model_best_psnr/metrics.csv,22.527856225844992,4.857011439679884,0.5118679720731822,0.19557294980945183
+style_translator_cahr,exp1,model_best_psnr_tta,./evaluations/style_translator_cahr/exp1/model_best_psnr_tta/metrics.csv,22.356447094115047,5.371840369588109,0.5508954135963106,0.19145985169048677
+style_translator,exp2,model_best_psnr,./evaluations/style_translator/exp2/model_best_psnr/metrics.csv,22.34252062870725,4.977923240060082,0.514938970370235,0.19471983158670014
+style_translator_cahr,exp2,model_best_psnr_tta,./evaluations/style_translator_cahr/exp2/model_best_psnr_tta/metrics.csv,22.3226276335507,5.285006108587122,0.5441983633653783,0.189182731067645
+style_translator,exp4,model_best_psnr,./evaluations/style_translator/exp4/model_best_psnr/metrics.csv,22.29557102157925,5.002666757463856,0.5136036009017647,0.19672519761546253
+style_translator_cahr,exp3,model_best_psnr_tta,./evaluations/style_translator_cahr/exp3/model_best_psnr_tta/metrics.csv,22.29249794123843,5.285615103284305,0.5424434218988535,0.18906427010870583
+style_translator,exp3,model_best_psnr,./evaluations/style_translator/exp3/model_best_psnr/metrics.csv,22.263088472838238,4.8322732412974485,0.516856545086025,0.19114178524039432
+style_translator_cahr,exp4,model_best_psnr_tta,./evaluations/style_translator_cahr/exp4/model_best_psnr_tta/metrics.csv,22.246319424484344,5.288984966457618,0.5405769209350944,0.18840331698961502
+style_translator_cahr,exp2,model_best_psnr,./evaluations/style_translator_cahr/exp2/model_best_psnr/metrics.csv,22.017294338490128,5.283523298947754,0.513971569750885,0.1954427911266126
+style_translator_cahr,exp1,model_best_psnr,./evaluations/style_translator_cahr/exp1/model_best_psnr/metrics.csv,21.992838863157143,5.3457029937133855,0.5148766344080078,0.19759945462206835
+style_translator_cahr,exp3,model_best_psnr,./evaluations/style_translator_cahr/exp3/model_best_psnr/metrics.csv,21.97954238377131,5.285558788808847,0.5125943594301208,0.19603078495663406
+style_translator_cahr,exp4,model_best_psnr,./evaluations/style_translator_cahr/exp4/model_best_psnr/metrics.csv,21.96603541875589,5.306504457703112,0.512370818665592,0.19408954950611473

@@ -17,10 +17,10 @@ def main(args):
     # prints information
     print('-' * 100)
     print('Evaluation for BCI Dataset ...\n')
-    print(f'- Data Dir:   {args.data_dir}')
+    print(f'- Data Dir  : {args.data_dir}')
     print(f'- Model Path: {model_path}')
-    print(f'- Configs:    {args.config_file}')
-    print(f'- Apply TTA:  {args.apply_tta}', '\n')
+    print(f'- Configs   : {args.config_file}')
+    print(f'- Apply TTA : {args.apply_tta}', '\n')
 
     # initializes trainer
     if args.evaluator == 'basic':
