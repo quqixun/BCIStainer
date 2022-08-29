@@ -120,14 +120,14 @@ class BCICAHRDataset(Dataset):
 
     def _getitem_val(self, he, ihc):
 
-        he_crop_list  = []
+        he_crop_list = []
         for row_idx, col_idx in self.crop_rowx_cols:
             he_crop = he[
                 row_idx:row_idx + self.crop_size,
                 col_idx:col_idx + self.crop_size
             ].copy()
             he_crop_list.append(he_crop)
-        he_crop  = np.array(he_crop_list)
+        he_crop = np.array(he_crop_list)
 
         # print(he.shape, he_crop.shape)
 

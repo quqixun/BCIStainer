@@ -33,7 +33,7 @@ class RecLoss(nn.Module):
         elif mode == 'smae':
             self.loss = nn.SmoothL1Loss()
         elif mode == 'charb':
-            self.loss = CharbonnierLoss(eps=1e-6)
+            self.loss = CharbonnierLoss()
         elif mode == 'lpips':
             self.loss = lpips.LPIPS(net='alex')
         else:
@@ -88,7 +88,7 @@ class MSGANLoss(nn.Module):
         if mode == 'lsgan':
             pass
         elif mode == 'charb':
-            self.charb_loss = CharbonnierLoss(eps=1e-6)
+            self.charb_loss = CharbonnierLoss()
         elif mode == 'original':
             pass
         elif mode == 'wgan':
