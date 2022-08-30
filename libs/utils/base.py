@@ -1,6 +1,7 @@
 import os
 import json
 import math
+from libs.models.C import define_C
 import torch
 
 from .losses import *
@@ -20,26 +21,6 @@ class BCIBaseTrainer(object):
         self.log_path = os.path.join(self.exp_dir, 'log.txt')
         self.resume_ckpt = resume_ckpt
 
-        # model
-        self.D_params = configs.D
-        self.G_params = configs.G
-        self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.D_input  = 'ihc' if configs.D.params.input_channels == 3 else 'he+ihc'
-
-        # loss
-        self.cls_params = configs.loss.cls
-        self.rec_params = configs.loss.rec
-        self.sim_params = configs.loss.sim
-        self.gan_params = configs.loss.gan
-
-        # optimizer
-        self.opt_name   = configs.optimizer.name
-        self.opt_params = configs.optimizer.params
-
-        # scheduler
-        self.min_lr = configs.scheduler.min_lr
-        self.warmup = configs.scheduler.warmup
-
         # trainer
         self.start_epoch = 0
         self.epochs      = configs.trainer.epochs
@@ -49,6 +30,31 @@ class BCIBaseTrainer(object):
         self.diffaug     = configs.trainer.diffaug
         self.ema         = configs.trainer.ema
         self.low_weight  = configs.trainer.low_weight
+        self.apply_cmp   = configs.trainer.get('apply_cmp', False)
+
+        # model
+        self.D_params = configs.D
+        self.G_params = configs.G
+        self.device   = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.D_input  = 'ihc' if configs.D.params.input_channels == 3 else 'he+ihc'
+        if self.apply_cmp:
+            self.C_params = configs.C
+
+        # loss
+        self.cls_params = configs.loss.cls
+        self.rec_params = configs.loss.rec
+        self.sim_params = configs.loss.sim
+        self.gan_params = configs.loss.gan
+        if self.apply_cmp:
+            self.cmp_params = configs.loss.cmp
+
+        # optimizer
+        self.opt_name   = configs.optimizer.name
+        self.opt_params = configs.optimizer.params
+
+        # scheduler
+        self.min_lr = configs.scheduler.min_lr
+        self.warmup = configs.scheduler.warmup
 
         self._load_model()
         self._load_losses()
@@ -71,6 +77,10 @@ class BCIBaseTrainer(object):
                 power=1.0
             )
 
+        if self.apply_cmp:
+            self.C = define_C(self.C_params)
+            self.C = self.C.to(self.device)
+
         return
 
     def _load_losses(self):
@@ -79,6 +89,9 @@ class BCIBaseTrainer(object):
         self.rec_loss = RecLoss(**self.rec_params).to(self.device)
         self.sim_loss = SimLoss(**self.sim_params).to(self.device)
         self.gan_loss = MSGANLoss(**self.gan_params).to(self.device)
+
+        if self.apply_cmp:
+            self.cmp_loss = CmpLoss(**self.cmp_params).to(self.device)
 
         self.eval_metrics = EvalMetrics().to(self.device)
 
@@ -99,6 +112,8 @@ class BCIBaseTrainer(object):
 
         self.D_opt = opt_func(self.D.parameters(), **self.opt_params)
         self.G_opt = opt_func(self.G.parameters(), **self.opt_params)
+        if self.apply_cmp:
+            self.C_opt = opt_func(self.C.parameters(), **self.opt_params)
 
         return
 
@@ -131,6 +146,9 @@ class BCIBaseTrainer(object):
             self.G_opt.load_state_dict(checkpoint['G_opt'])
             if self.ema:
                 self.Gema.load_state_dict(checkpoint['Gema'])
+            if self.apply_cmp:
+                self.C.load_state_dict(checkpoint['C'])
+                self.C_opt.load_state_dict(checkpoint['C_opt'])
 
         except Exception:
             print('Faild to resume checkpoint')
@@ -151,6 +169,9 @@ class BCIBaseTrainer(object):
         }
         if self.ema:
             ckpt['Gema'] = self.Gema.state_dict()
+        if self.apply_cmp:
+            ckpt['C']     = self.C.state_dict()
+            ckpt['C_opt'] = self.C_opt.state_dict()
 
         torch.save(ckpt, ckpt_path)
 
@@ -186,7 +207,11 @@ class BCIBaseTrainer(object):
                 (self.opt_params.lr - self.min_lr) * 0.5 * \
                 (1.0 + math.cos(math.pi * epoch_ratio))
 
-        for optimizer in [self.G_opt, self.D_opt]:
+        optimizers = [self.G_opt, self.D_opt]
+        if self.apply_cmp:
+            optimizers.append(self.C_opt)
+
+        for optimizer in optimizers:
             for param_group in optimizer.param_groups:
                 if 'lr_scale' in param_group:
                     param_group['lr'] = lr * param_group['lr_scale']

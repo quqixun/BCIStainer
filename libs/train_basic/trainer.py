@@ -56,7 +56,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
         self.D.train()
         self.G.train()
 
-        header = 'Train Epoch:[{}]'.format(epoch)
+        header = 'Train:[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
         logger.add_meter('lr', SmoothedValue(1, '{value:.6f}'))
 
@@ -73,10 +73,10 @@ class BCIBasicTrainer(BCIBaseTrainer):
             he, ihc, level = [d.to(self.device) for d in data]
             multi_outputs = self.G(he)
             if not self.G.output_lowres:
-                ihc_hr_pred, level_pred = multi_outputs
+                ihc_hr_pred, he_level_pred = multi_outputs
                 ihc_lr_pred = None
             else:  # self.G.output_lowres is True
-                ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
+                ihc_hr_pred, ihc_lr_pred, he_level_pred = multi_outputs
 
             # update D
             self._set_requires_grad(self.D, True)
@@ -86,28 +86,47 @@ class BCIBasicTrainer(BCIBaseTrainer):
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
 
+            # update C
+            if self.apply_cmp:
+                self._set_requires_grad(self.C, True)
+                ihc_level, ihc_latent = self.C(ihc)
+                loss_C = self.cls_loss(level, ihc_level)
+                loss_C.backward()
+                if (iter_step + 1) % self.accum_iter == 0:
+                    self.C_opt.step()
+                logger.update(Ccls=loss_C.item())
+
             # update G
-            self._set_requires_grad(self.D, False)
-            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-            G_cls = self.cls_loss(level, level_pred)
-            loss_G = G_gan + G_rec + G_sim + G_cls
+            if not self.apply_cmp:
+                self._set_requires_grad(self.D, False)
+                G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
+                G_cls = self.cls_loss(level, he_level_pred)
+                loss_G = G_gan + G_rec + G_sim + G_cls
+            else:
+                self._set_requires_grad([self.D, self.C], False)
+                G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
+                G_cls = self.cls_loss(level, he_level_pred)
+                G_cmp = self._C_loss(ihc_latent, ihc_hr_pred, level)
+                loss_G = G_gan + G_rec + G_sim + G_cls + G_cmp
+
             loss_G.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
+                if self.ema:
+                    self.Gema.update()
 
             # update logger
             logger.update(
-                D_fake=D_fake.item(),
-                D_real=D_real.item(),
-                G_gan=G_gan.item(),
-                G_rec=G_rec.item(),
-                G_sim=G_sim.item(),
-                G_cls=G_cls.item(),
+                Dfake=D_fake.item(),
+                Dreal=D_real.item(),
+                Ggan=G_gan.item(),
+                Grec=G_rec.item(),
+                Gsim=G_sim.item(),
+                Gcls=G_cls.item(),
                 lr=self.G_opt.param_groups[0]['lr']
             )
-
-            if self.ema:
-                self.Gema.update()
+            if self.apply_cmp:
+                logger.update(Gcmp=G_cmp.item())
 
         logger_info = {
             key: meter.global_avg
@@ -120,7 +139,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
 
         val_model.eval()
 
-        header = ' Val  Epoch:[{}]'.format(epoch)
+        header = ' Val :[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
 
         data_iter = logger.log_every(loader)
@@ -171,6 +190,16 @@ class BCIBasicTrainer(BCIBaseTrainer):
         G_sim = self.sim_loss(ihc, ihc_hr_pred)
 
         return G_gan, G_rec, G_sim
+
+    def _C_loss(self, ihc_latent, ihc_hr_pred, level):
+
+        ihc_pred_level, ihc_pred_latent = self.C(ihc_hr_pred)
+        if self.cmp_loss.mode == 'cossim':
+            G_cmp = self.cmp_loss(ihc_latent.detach(), ihc_pred_latent)
+        else:  # self.cmp_loss.mode in ['ce', 'focal']
+            G_cmp = self.cmp_loss(level, ihc_pred_level)
+
+        return G_cmp
 
     def _get_D_input(self, he, ihc):
 

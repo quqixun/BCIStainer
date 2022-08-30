@@ -210,6 +210,33 @@ class ClsLoss(nn.Module):
         return self.loss(prediction, target) * self.weight
 
 
+class CmpLoss(nn.Module):
+
+    def __init__(self, mode, weight=1.0):
+        super(CmpLoss, self).__init__()
+
+        self.mode = mode
+        self.weight = weight
+
+        if mode == 'ce':
+            self.loss = nn.CrossEntropyLoss()
+        elif mode == 'focal':
+            self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
+        elif mode == 'cossim':
+            self.cossim = nn.CosineSimilarity(dim=1, eps=1e-6)
+        else:
+            raise NotImplementedError(f'cmp mode {mode} not implemented')
+
+    def forward(self, target, prediction):
+        if self.mode == 'cossim':
+            cossim = self.cossim(target, prediction)
+            loss = 1 - cossim.mean()
+        else:  # mode in ['ce', 'focal']
+            loss = self.loss(prediction, target)
+
+        return loss * self.weight
+
+
 class EvalMetrics(nn.Module):
 
     def __init__(self):
@@ -227,3 +254,13 @@ class EvalMetrics(nn.Module):
         ssim = self.ssim(prediction_, target_)
 
         return psnr, ssim
+
+
+if __name__ == '__main__':
+    import torch
+
+    x1 = torch.rand(2, 256)
+    x2 = torch.rand(2, 256)
+    loss_fn = CmpLoss(mode='cossim')
+    loss = loss_fn(x1, x2)
+    print(loss)
