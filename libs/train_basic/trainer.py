@@ -23,17 +23,21 @@ class BCIBasicTrainer(BCIBaseTrainer):
             # save model with best val psnr
             val_model = self.Gema if self.ema else self.G
             val_metrics = self._val_epoch(val_model, val_loader, epoch)
-            if val_metrics['psnr'] > best_val_psnr:
-                best_val_psnr = val_metrics['psnr']
+
+            psnr = val_metrics['psnr']
+            ssim = val_metrics['ssim']
+
+            if psnr > best_val_psnr:
+                best_val_psnr = psnr
                 self._save_model(val_model, 'best_psnr')
                 print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
+                psnr_msg = f'PSNR(Best):{psnr:.4f} SSIM:{ssim:.4f} Epoch:{epoch}'
 
-            if val_metrics['ssim'] > best_val_ssim:
-                best_val_ssim = val_metrics['ssim']
+            if ssim > best_val_ssim:
+                best_val_ssim = ssim
                 self._save_model(val_model, 'best_ssim')
                 print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
-                best_ssim_msg = f'- Best SSIM:{best_val_ssim:.4f} in Epoch:{epoch}'
+                ssim_msg = f'SSIM(Best):{ssim:.4f} PSNR:{psnr:.4f} Epoch:{epoch}'
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
@@ -43,8 +47,8 @@ class BCIBasicTrainer(BCIBaseTrainer):
             self._save_logs(epoch, train_metrics, val_metrics)
             print()
 
-        print(best_psnr_msg)
-        print(best_ssim_msg)
+        print(psnr_msg)
+        print(ssim_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))

@@ -28,16 +28,20 @@ class Comparator(nn.Module):
         norm_layer = get_norm_layer(norm_type=norm_type)
         use_bias = False if norm_type == 'batch' else True
 
-        encoder = []
+        encoder = [
+            ConvNormAct(
+                in_dims=input_channels, out_dims=init_channels,
+                conv_type='conv2d', kernel_size=7, stride=1,
+                padding=3, bias=use_bias, norm_layer=norm_layer,
+                sampling='none'
+            )
+        ]
+
         num_blocks = int(np.log2(full_size / 8))
         for i in range(num_blocks):
-            if i == 0:
-                in_dims  = input_channels
-                out_dims = init_channels
-            else:
-                mult     = 2 ** (i - 1)
-                in_dims  = min(init_channels * mult, max_channels)
-                out_dims = min(init_channels * mult * 2, max_channels)
+            mult     = 2 ** i
+            in_dims  = min(init_channels * mult, max_channels)
+            out_dims = min(init_channels * mult * 2, max_channels)
             encoder.append(
                 ConvNormAct(
                     in_dims=in_dims, out_dims=out_dims,

@@ -1,13 +1,12 @@
 import os
 import json
 import math
-from libs.models.C import define_C
 import torch
 
 from .losses import *
 from ema_pytorch import EMA
 from adan_pytorch import Adan
-from ..models import define_G, define_D
+from ..models import define_G, define_D, define_C
 
 
 class BCIBaseTrainer(object):
