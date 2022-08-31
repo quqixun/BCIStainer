@@ -5,7 +5,10 @@ config_file_list=(
     # ./configs/style_translator/exp5.yaml
     # ./configs/style_translator/exp6.yaml
     # ./configs/style_translator/exp9.yaml
-    ./configs/style_translator_cmp/exp1.yaml
+    # ./configs/style_translator/exp15.yaml
+    # ./configs/style_translator_cmp/exp1.yaml
+    # ./configs/style_translator_cmp/exp2.yaml
+    ./configs/style_translator_cmp/exp3.yaml
 )
 
 for config_file in ${config_file_list[@]}; do

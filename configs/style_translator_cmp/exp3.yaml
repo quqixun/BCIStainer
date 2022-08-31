@@ -1,12 +1,12 @@
 ---
 
 
-exp:  style_translator_cmp/exp2
+exp:  style_translator_cmp/exp3
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 1
   val_batch:   1
   num_workers: 20
   pin_memory:  true
@@ -68,7 +68,7 @@ loss:
     mode:   lsgan
     weight: 1.0
   cmp:
-    mode:   cossim
+    mode:   focal
     weight: 1.0
 
 optimizer:
@@ -84,7 +84,7 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 1
+  accum_iter: 8
   diffaug:    false
   ema:        true
   low_weight: 0.0

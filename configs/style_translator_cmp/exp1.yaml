@@ -25,7 +25,7 @@ G:
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   true
+    output_lowres:   false
   init:
     init_type: normal
     init_gain: 0.02
@@ -57,10 +57,10 @@ C:
 loss:
   cls:
     mode:   focal
-    weight: 5.0
+    weight: 1.0
   rec:
     mode:   mae
-    weight: 10.0
+    weight: 3.0
   sim:
     mode:   ssim
     weight: 1.0
@@ -84,10 +84,10 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 4
+  accum_iter: 1
   diffaug:    false
   ema:        true
-  low_weight: 1.0
+  low_weight: 0.0
   apply_cmp:  true
   ckpt_freq:  1000
   print_freq: 100
