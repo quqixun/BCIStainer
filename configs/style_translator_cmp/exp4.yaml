@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator/exp16
+exp:  style_translator_cmp/exp4
 seed: 42
 
 loader:
@@ -19,13 +19,12 @@ G:
     output_channels: 3
     init_channels:   32
     levels:          4
-    encoder1_blocks: 4
-    style_type:      mod
-    style_linear:    true
+    encoder1_blocks: 3
+    style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   false
+    output_lowres:   true
   init:
     init_type: normal
     init_gain: 0.02
@@ -55,6 +54,9 @@ loss:
   gan:
     mode:   lsgan
     weight: 1.0
+  cmp:
+    mode:   csim
+    weight: 1.0
 
 optimizer:
   name: AdamW
@@ -65,14 +67,16 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 50
+  warmup: 60
 
 trainer:
-  epochs:     150
+  epochs:     200
   accum_iter: 1
   diffaug:    false
   ema:        true
-  low_weight: 0.0
+  low_weight: 1.0
+  apply_cmp:  true
+  start_cmp:  60
   ckpt_freq:  1000
   print_freq: 100
 

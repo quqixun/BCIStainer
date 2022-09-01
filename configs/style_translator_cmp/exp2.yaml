@@ -20,36 +20,23 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      mod
-    style_linear:    true
+    style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   false
+    output_lowres:   true
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
-  init:
-    init_type: normal
-    init_gain: 0.02
-
-C:
-  params:
-    full_size:      1024
-    input_channels: 3
-    init_channels:  32
-    max_channels:   256
-    levels:         4
-    norm_type:      batch
-    dropout:        0.2
+    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
@@ -57,10 +44,10 @@ C:
 loss:
   cls:
     mode:   focal
-    weight: 1.0
+    weight: 5.0
   rec:
     mode:   mae
-    weight: 3.0
+    weight: 10.0
   sim:
     mode:   ssim
     weight: 1.0
@@ -68,7 +55,7 @@ loss:
     mode:   lsgan
     weight: 1.0
   cmp:
-    mode:   cossim
+    mode:   focal
     weight: 1.0
 
 optimizer:
@@ -80,15 +67,16 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 50
+  warmup: 60
 
 trainer:
-  epochs:     150
+  epochs:     200
   accum_iter: 1
   diffaug:    false
   ema:        true
-  low_weight: 0.0
+  low_weight: 1.0
   apply_cmp:  true
+  start_cmp:  60
   ckpt_freq:  1000
   print_freq: 100
 
