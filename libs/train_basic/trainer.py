@@ -14,30 +14,33 @@ class BCIBasicTrainer(BCIBaseTrainer):
     def forward(self, train_loader, val_loader):
 
         best_val_psnr = 0.0
-        best_val_ssim = 0.0
+        best_val_clsf = np.inf
         start_time = time.time()
 
+        basic_msg = 'PSNR:{:.4f} SSIM:{:.4f} CLSF:{:.4f} Epoch:{}'
         for epoch in range(self.start_epoch, self.epochs):
             train_metrics = self._train_epoch(train_loader, epoch)
 
             # save model with best val psnr
             val_model = self.Gema if self.ema else self.G
             val_metrics = self._val_epoch(val_model, val_loader, epoch)
-
             psnr = val_metrics['psnr']
             ssim = val_metrics['ssim']
+            clsf = val_metrics['clsf'] if self.apply_cmp else 0.0
+            info_list = [psnr, ssim, clsf, epoch]
 
             if psnr > best_val_psnr:
                 best_val_psnr = psnr
                 self._save_model(val_model, 'best_psnr')
-                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                psnr_msg = f'PSNR(Best):{psnr:.4f} SSIM:{ssim:.4f} Epoch:{epoch}'
+                print('>>> Highest PSNR - Save Model <<<')
+                psnr_msg = '- Best PSNR: ' + basic_msg.format(*info_list)
 
-            if ssim > best_val_ssim:
-                best_val_ssim = ssim
-                self._save_model(val_model, 'best_ssim')
-                print('>>> Best Val Epoch - Highest SSIM - Save Model <<<')
-                ssim_msg = f'SSIM(Best):{ssim:.4f} PSNR:{psnr:.4f} Epoch:{epoch}'
+            if self.apply_cmp:
+                if clsf < best_val_clsf:
+                    best_val_clsf = clsf
+                    self._save_model(val_model, 'best_clsf')
+                    print('>>> Lowest  CLSF - Save Model <<<')
+                    clsf_msg = '- Best CLSF: ' + basic_msg.format(*info_list)
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
@@ -48,7 +51,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
             print()
 
         print(psnr_msg)
-        print(ssim_msg)
+        print(clsf_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -72,6 +75,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
             # lr scheduler on per iteration
             if iter_step % self.accum_iter == 0:
                 self._adjust_learning_rate(iter_step / len(loader) + epoch)
+            logger.update(lr=self.G_opt.param_groups[0]['lr'])
 
             # forward
             he, ihc, level = [d.to(self.device) for d in data]
@@ -82,55 +86,47 @@ class BCIBasicTrainer(BCIBaseTrainer):
             else:  # self.G.output_lowres is True
                 ihc_hr_pred, ihc_lr_pred, he_level_pred = multi_outputs
 
+            # update C
+            if self.apply_cmp and (epoch < self.start_cmp):
+                self.C.train()
+                self._set_requires_grad(self.C, True)
+                ihc_level, ihc_latent = self.C(ihc)
+                loss_C = self.ccl_loss(level, ihc_level)
+                logger.update(Ccls=loss_C.item())
+                loss_C.backward()
+                if (iter_step + 1) % self.accum_iter == 0:
+                    self.C_opt.step()
+
             # update D
             self._set_requires_grad(self.D, True)
             D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
+            logger.update(Dfake=D_fake.item(), Dreal=D_real.item())
             loss_D = (D_fake + D_real) * 0.5
             loss_D.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
 
-            # update C
-            if self.apply_cmp:
-                self._set_requires_grad(self.C, True)
-                ihc_level, ihc_latent = self.C(ihc)
-                loss_C = self.cls_loss(level, ihc_level)
-                loss_C.backward()
-                if (iter_step + 1) % self.accum_iter == 0:
-                    self.C_opt.step()
-                logger.update(Ccls=loss_C.item())
-
             # update G
-            if not self.apply_cmp:
-                self._set_requires_grad(self.D, False)
-                G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-                G_cls = self.cls_loss(level, he_level_pred)
-                loss_G = G_gan + G_rec + G_sim + G_cls
-            else:
-                self._set_requires_grad([self.D, self.C], False)
-                G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-                G_cls = self.cls_loss(level, he_level_pred)
+            self._set_requires_grad(self.D, False)
+            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
+            G_cls = self.gcl_loss(level, he_level_pred)
+            logger.update(Ggan=G_gan.item(), Grec=G_rec.item(),
+                          Gsim=G_sim.item(), Gcls=G_cls.item())
+            loss_G = G_gan + G_rec + G_sim + G_cls
+
+            if self.apply_cmp and (epoch >= self.start_cmp):
+                self.C.eval()
+                self._set_requires_grad(self.C, False)
+                ihc_level, ihc_latent = self.C(ihc)
                 G_cmp = self._C_loss(ihc_latent, ihc_hr_pred, level)
-                loss_G = G_gan + G_rec + G_sim + G_cls + G_cmp
+                logger.update(Gcmp=G_cmp.item())
+                loss_G += G_cmp
 
             loss_G.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
                 if self.ema:
                     self.Gema.update()
-
-            # update logger
-            logger.update(
-                Dfake=D_fake.item(),
-                Dreal=D_real.item(),
-                Ggan=G_gan.item(),
-                Grec=G_rec.item(),
-                Gsim=G_sim.item(),
-                Gcls=G_cls.item(),
-                lr=self.G_opt.param_groups[0]['lr']
-            )
-            if self.apply_cmp:
-                logger.update(Gcmp=G_cmp.item())
 
         logger_info = {
             key: meter.global_avg
@@ -148,13 +144,19 @@ class BCIBasicTrainer(BCIBaseTrainer):
 
         data_iter = logger.log_every(loader)
         for _, data in enumerate(data_iter):
-            he, ihc, _ = [d.to(self.device) for d in data]
+            he, ihc, level = [d.to(self.device) for d in data]
             multi_outputs = val_model(he)
             ihc_hr_pred = multi_outputs[0]
 
             psnr, ssim = self.eval_metrics(ihc, ihc_hr_pred)
             logger.update(psnr=psnr.item(), ssim=ssim.item())
-        
+
+            if self.apply_cmp:
+                self.C.eval()
+                ihc_level, ihc_latent = self.C(ihc_hr_pred)
+                clsf = self.ccl_loss(level, ihc_level)
+                logger.update(clsf=clsf.item())
+
         logger_info = {
             key: meter.global_avg
             for key, meter in logger.meters.items()
@@ -198,7 +200,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
     def _C_loss(self, ihc_latent, ihc_hr_pred, level):
 
         ihc_pred_level, ihc_pred_latent = self.C(ihc_hr_pred)
-        if self.cmp_loss.mode == 'cossim':
+        if self.cmp_loss.mode == 'csim':
             G_cmp = self.cmp_loss(ihc_latent.detach(), ihc_pred_latent)
         else:  # self.cmp_loss.mode in ['ce', 'focal']
             G_cmp = self.cmp_loss(level, ihc_pred_level)

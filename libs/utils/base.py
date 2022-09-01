@@ -30,6 +30,7 @@ class BCIBaseTrainer(object):
         self.ema         = configs.trainer.ema
         self.low_weight  = configs.trainer.low_weight
         self.apply_cmp   = configs.trainer.get('apply_cmp', False)
+        self.start_cmp   = configs.trainer.get('start_cmp', 0)
 
         # model
         self.D_params = configs.D
@@ -84,13 +85,14 @@ class BCIBaseTrainer(object):
 
     def _load_losses(self):
 
-        self.cls_loss = ClsLoss(**self.cls_params).to(self.device)
+        self.gcl_loss = ClsLoss(**self.cls_params).to(self.device)
         self.rec_loss = RecLoss(**self.rec_params).to(self.device)
         self.sim_loss = SimLoss(**self.sim_params).to(self.device)
         self.gan_loss = MSGANLoss(**self.gan_params).to(self.device)
 
         if self.apply_cmp:
             self.cmp_loss = CmpLoss(**self.cmp_params).to(self.device)
+            self.ccl_loss = ClsLoss(mode='focal', weight=1.0).to(self.device)
 
         self.eval_metrics = EvalMetrics().to(self.device)
 
@@ -112,7 +114,7 @@ class BCIBaseTrainer(object):
         self.D_opt = opt_func(self.D.parameters(), **self.opt_params)
         self.G_opt = opt_func(self.G.parameters(), **self.opt_params)
         if self.apply_cmp:
-            self.C_opt = opt_func(self.C.parameters(), **self.opt_params)
+            self.C_opt = opt_func(self.C.parameters(), lr=1e-4, betas=(0.9, 0.99))
 
         return
 
@@ -207,9 +209,6 @@ class BCIBaseTrainer(object):
                 (1.0 + math.cos(math.pi * epoch_ratio))
 
         optimizers = [self.G_opt, self.D_opt]
-        if self.apply_cmp:
-            optimizers.append(self.C_opt)
-
         for optimizer in optimizers:
             for param_group in optimizer.param_groups:
                 if 'lr_scale' in param_group:

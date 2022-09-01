@@ -31,13 +31,13 @@ class Comparator(nn.Module):
         encoder = [
             ConvNormAct(
                 in_dims=input_channels, out_dims=init_channels,
-                conv_type='conv2d', kernel_size=7, stride=1,
+                conv_type='conv2d', kernel_size=7, stride=2,
                 padding=3, bias=use_bias, norm_layer=norm_layer,
                 sampling='none'
             )
         ]
 
-        num_blocks = int(np.log2(full_size / 8))
+        num_blocks = int(np.log2(full_size / 2 / 8))
         for i in range(num_blocks):
             mult     = 2 ** i
             in_dims  = min(init_channels * mult, max_channels)

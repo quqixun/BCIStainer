@@ -222,15 +222,15 @@ class CmpLoss(nn.Module):
             self.loss = nn.CrossEntropyLoss()
         elif mode == 'focal':
             self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
-        elif mode == 'cossim':
-            self.cossim = nn.CosineSimilarity(dim=1, eps=1e-6)
+        elif mode == 'csim':
+            self.csim = nn.CosineSimilarity(dim=1, eps=1e-6)
         else:
             raise NotImplementedError(f'cmp mode {mode} not implemented')
 
     def forward(self, target, prediction):
-        if self.mode == 'cossim':
-            cossim = self.cossim(target, prediction)
-            loss = 1 - cossim.mean()
+        if self.mode == 'csim':
+            csim = self.csim(target, prediction)
+            loss = 1 - csim.mean()
         else:  # mode in ['ce', 'focal']
             loss = self.loss(prediction, target)
 
