@@ -188,8 +188,8 @@ class BCIBaseTrainer(object):
     def _save_logs(self, epoch, train_metrics, val_metrics):
 
         log_stats = {
-            **{f'train_{k}': v for k, v in train_metrics.items()},
-            **{f'val_{k}': v for k, v in val_metrics.items()},
+            **{f't{k}': round(v, 6) for k, v in train_metrics.items()},
+            **{f'v{k}': round(v, 6) for k, v in val_metrics.items()},
             'epoch': epoch
         }
         with open(self.log_path, mode='a', encoding='utf-8') as f:

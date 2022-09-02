@@ -12,8 +12,8 @@ class CharbonnierLoss(nn.Module):
         super(CharbonnierLoss, self).__init__()
         self.eps2 = eps ** 2
 
-    def forward(self, x, y):
-        diff2 = (x - y) ** 2
+    def forward(self, prediction, target):
+        diff2 = (prediction - target) ** 2
         loss = torch.sqrt(diff2 + self.eps2).mean()
         return loss
 
@@ -39,8 +39,8 @@ class RecLoss(nn.Module):
         else:
             raise NotImplementedError(f'rec mode {mode} not implemented')
 
-    def forward(self, target, prediction):
-        loss = self.loss(target, prediction)
+    def forward(self, prediction, target):
+        loss = self.loss(prediction, target)
         if self.mode == 'lpips':
             loss = loss.mean()
         return loss * self.weight
@@ -62,7 +62,7 @@ class SimLoss(nn.Module):
         else:
             raise NotImplementedError(f'sim mode {mode} not implemented')
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         # range in [0, 1]
         target_ = (target + 1.0) / 2.0
         prediction_ = (prediction + 1.0) / 2.0
@@ -172,16 +172,16 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.size_average = size_average
 
-    def forward(self, preds, labels):
+    def forward(self, prediction, target):
 
-        preds = preds.view(-1, preds.size(-1)).float()
+        preds = prediction.view(-1, prediction.size(-1)).float()
         alpha = self.alpha.to(preds.device)
         preds_logsoft = F.log_softmax(preds, dim=1)
         preds_softmax = torch.exp(preds_logsoft)
 
-        preds_softmax = preds_softmax.gather(1, labels.view(-1, 1))
-        preds_logsoft = preds_logsoft.gather(1, labels.view(-1, 1))
-        alpha = alpha.gather(0, labels.view(-1))
+        preds_softmax = preds_softmax.gather(1, target.view(-1, 1))
+        preds_logsoft = preds_logsoft.gather(1, target.view(-1, 1))
+        alpha = alpha.gather(0, target.view(-1))
         loss  = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
 
         loss = torch.mul(alpha, loss.t())
@@ -206,7 +206,7 @@ class ClsLoss(nn.Module):
         else:
             raise NotImplementedError(f'cls mode {mode} not implemented')
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         return self.loss(prediction, target) * self.weight
 
 
@@ -227,7 +227,7 @@ class CmpLoss(nn.Module):
         else:
             raise NotImplementedError(f'cmp mode {mode} not implemented')
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         if self.mode == 'csim':
             csim = self.csim(prediction, target)
             loss = 1 - csim.mean()
@@ -245,7 +245,7 @@ class EvalMetrics(nn.Module):
         self.psnr = PSNR(value_range=255)
         self.ssim = SSIM(window_size=9, sigma=2.375, n_channels=3, value_range=255)
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         # range in [0, 255]
         target_ = (target + 1.0) / 2.0 * 255.0
         prediction_ = (prediction + 1.0) / 2.0 * 255.0
@@ -254,13 +254,3 @@ class EvalMetrics(nn.Module):
         ssim = self.ssim(prediction_, target_)
 
         return psnr, ssim
-
-
-if __name__ == '__main__':
-    import torch
-
-    x1 = torch.rand(2, 256)
-    x2 = torch.rand(2, 256)
-    loss_fn = CmpLoss(mode='cossim')
-    loss = loss_fn(x1, x2)
-    print(loss)
