@@ -41,6 +41,19 @@ D:
     init_type: normal
     init_gain: 0.02
 
+C:
+  params:
+    full_size:      1024
+    input_channels: 3
+    init_channels:  32
+    max_channels:   256
+    levels:         4
+    norm_type:      batch
+    dropout:        0.2
+  init:
+    init_type: normal
+    init_gain: 0.02
+
 loss:
   cls:
     mode:   focal
