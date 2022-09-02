@@ -34,14 +34,11 @@ class BCICAHREvaluator(object):
         self.crop_size = configs.loader.crop_size
         self.crop_range  = self.full_size - self.crop_size
         upper_idx = self.full_size - self.crop_size + 1
-        self.crop_row_idxs  = list(range(0, upper_idx, self.crop_size // 2))
-        self.crop_col_idxs  = list(range(0, upper_idx, self.crop_size // 2))
-        self.crop_rowx_cols = list(product(
-            self.crop_row_idxs, self.crop_col_idxs
-        ))
-        self.crop_idxs = torch.LongTensor(
-            np.array(self.crop_rowx_cols)
-        ).to(self.device)
+        crop_rows = list(range(0, upper_idx, self.crop_size // 2))
+        crop_cols = list(range(0, upper_idx, self.crop_size // 2))
+        self.crop_rows_cols = list(product(crop_rows, crop_cols))
+        crop_idxs = np.array(self.crop_rows_cols)
+        self.crop_idxs = torch.LongTensor(crop_idxs).to(self.device)
 
     def _load_model(self, model_path):
 
@@ -171,7 +168,7 @@ class BCICAHREvaluator(object):
     def _crop(self, he):
 
         he_crop_list = []
-        for row_idx, col_idx in self.crop_rowx_cols:
+        for row_idx, col_idx in self.crop_rows_cols:
             he_crop = he[
                 row_idx:row_idx + self.crop_size,
                 col_idx:col_idx + self.crop_size

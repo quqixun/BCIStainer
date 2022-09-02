@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator_cahr/exp2
+exp:  style_translator_cahr/exp13
 seed: 42
 
 loader:
@@ -23,8 +23,7 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      mod
-    style_linear:    true
+    style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
@@ -35,12 +34,13 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
+    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
@@ -64,18 +64,19 @@ optimizer:
   params:
     lr:           0.001
     betas:        [0.5, 0.9]
-    weight_decay: 0.0
+    weight_decay: 0.05
 
 scheduler:
   min_lr: 0.0
-  warmup: 30
+  warmup: 60
 
 trainer:
-  epochs:     100
+  epochs:     200
   accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  crop_loss:  true
   infer_mode: infer_crop
   ckpt_freq:  1000
   print_freq: 100

@@ -86,6 +86,10 @@ class BCICAHRDataset(Dataset):
             row_idx:row_idx + self.crop_size,
             col_idx:col_idx + self.crop_size
         ].copy()
+        ihc_crop = ihc[
+            row_idx:row_idx + self.crop_size,
+            col_idx:col_idx + self.crop_size
+        ].copy()
 
         # plt.figure(figsize=(15, 6))
         # plt.subplot(131)
@@ -107,10 +111,12 @@ class BCICAHRDataset(Dataset):
         he  = he.transpose(2, 0, 1).astype(np.float32)
         ihc = normalize_image(ihc, 'ihc', self.norm_method)
         ihc = ihc.transpose(2, 0, 1).astype(np.float32)
-        he_crop = normalize_image(he_crop, 'he', self.norm_method)
-        he_crop = he_crop.transpose(2, 0, 1).astype(np.float32)
+        he_crop  = normalize_image(he_crop, 'he', self.norm_method)
+        he_crop  = he_crop.transpose(2, 0, 1).astype(np.float32)
+        ihc_crop = normalize_image(ihc_crop, 'ihc', self.norm_method)
+        ihc_crop = ihc_crop.transpose(2, 0, 1).astype(np.float32)
 
-        return he, ihc, he_crop, crop_idx
+        return he, ihc, he_crop, ihc_crop, crop_idx
 
     def _getitem_val(self, he, ihc):
 
@@ -159,11 +165,11 @@ class BCICAHRDataset(Dataset):
         level = self.level_list[index]
 
         if self.mode == 'train':
-            he, ihc, he_crop, crop_idx = self._getitem_train(he, ihc)
-            return he, ihc, level, he_crop, crop_idx
+            he, ihc, he_crop, ihc_crop, crop_idx = self._getitem_train(he, ihc)
+            return he, ihc, level, he_crop, ihc_crop, crop_idx
         else:  # self.mode == 'val'
             he, ihc, he_crop, crop_idx = self._getitem_val(he, ihc)
-            return he, ihc, he_crop, crop_idx
+            return he, ihc, level, he_crop, crop_idx
 
 
 def get_cahr_dataloader(mode, data_dir, configs):

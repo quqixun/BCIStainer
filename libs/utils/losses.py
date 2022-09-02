@@ -8,12 +8,12 @@ from piqa import SSIM, MS_SSIM, HaarPSI, PSNR
 
 class CharbonnierLoss(nn.Module):
 
-    def __init__(self, eps=1e-3):
+    def __init__(self, eps=1e-6):
         super(CharbonnierLoss, self).__init__()
         self.eps2 = eps ** 2
 
-    def forward(self, x, y):
-        diff2 = (x - y) ** 2
+    def forward(self, prediction, target):
+        diff2 = (prediction - target) ** 2
         loss = torch.sqrt(diff2 + self.eps2).mean()
         return loss
 
@@ -33,17 +33,17 @@ class RecLoss(nn.Module):
         elif mode == 'smae':
             self.loss = nn.SmoothL1Loss()
         elif mode == 'charb':
-            self.loss = CharbonnierLoss(eps=1e-3)
+            self.loss = CharbonnierLoss()
         elif mode == 'lpips':
             self.loss = lpips.LPIPS(net='alex')
         else:
             raise NotImplementedError(f'rec mode {mode} not implemented')
 
-    def forward(self, target, prediction):
-        loss = self.loss(target, prediction)
+    def forward(self, prediction, target):
+        loss = self.loss(prediction, target)
         if self.mode == 'lpips':
             loss = loss.mean()
-        return  loss * self.weight
+        return loss * self.weight
 
 
 class SimLoss(nn.Module):
@@ -56,13 +56,13 @@ class SimLoss(nn.Module):
         if mode == 'ssim':
             self.sim = SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'ms_ssim':
-            self.sim = MS_SSIM(window_size=7, sigma=1.5, n_channels=3)
+            self.sim = MS_SSIM(window_size=9, sigma=2.375, n_channels=3)
         elif mode == 'haarpsi':
             self.sim = HaarPSI(chromatic=True, downsample=True)
         else:
             raise NotImplementedError(f'sim mode {mode} not implemented')
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         # range in [0, 1]
         target_ = (target + 1.0) / 2.0
         prediction_ = (prediction + 1.0) / 2.0
@@ -88,7 +88,7 @@ class MSGANLoss(nn.Module):
         if mode == 'lsgan':
             pass
         elif mode == 'charb':
-            self.charb_loss = CharbonnierLoss(eps=1e-3)
+            self.charb_loss = CharbonnierLoss()
         elif mode == 'original':
             pass
         elif mode == 'wgan':
@@ -172,17 +172,17 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.size_average = size_average
 
-    def forward(self, preds, labels):
+    def forward(self, prediction, target):
 
-        preds = preds.view(-1, preds.size(-1)).float()
+        preds = prediction.view(-1, prediction.size(-1)).float()
         alpha = self.alpha.to(preds.device)
         preds_logsoft = F.log_softmax(preds, dim=1)
         preds_softmax = torch.exp(preds_logsoft)
 
-        preds_softmax = preds_softmax.gather(1, labels.view(-1, 1))
-        preds_logsoft = preds_logsoft.gather(1, labels.view(-1, 1))
-        alpha = alpha.gather(0, labels.view(-1))
-        loss = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
+        preds_softmax = preds_softmax.gather(1, target.view(-1, 1))
+        preds_logsoft = preds_logsoft.gather(1, target.view(-1, 1))
+        alpha = alpha.gather(0, target.view(-1))
+        loss  = -torch.mul(torch.pow((1 - preds_softmax), self.gamma), preds_logsoft)
 
         loss = torch.mul(alpha, loss.t())
         if self.size_average:
@@ -206,8 +206,35 @@ class ClsLoss(nn.Module):
         else:
             raise NotImplementedError(f'cls mode {mode} not implemented')
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         return self.loss(prediction, target) * self.weight
+
+
+class CmpLoss(nn.Module):
+
+    def __init__(self, mode, weight=1.0):
+        super(CmpLoss, self).__init__()
+
+        self.mode = mode
+        self.weight = weight
+
+        if mode == 'ce':
+            self.loss = nn.CrossEntropyLoss()
+        elif mode == 'focal':
+            self.loss = FocalLoss(alpha=[0.5, 0.2, 0.2, 0.1], gamma=2)
+        elif mode == 'csim':
+            self.csim = nn.CosineSimilarity(dim=1, eps=1e-6)
+        else:
+            raise NotImplementedError(f'cmp mode {mode} not implemented')
+
+    def forward(self, prediction, target):
+        if self.mode == 'csim':
+            csim = self.csim(prediction, target)
+            loss = 1 - csim.mean()
+        else:  # mode in ['ce', 'focal']
+            loss = self.loss(prediction, target)
+
+        return loss * self.weight
 
 
 class EvalMetrics(nn.Module):
@@ -218,7 +245,7 @@ class EvalMetrics(nn.Module):
         self.psnr = PSNR(value_range=255)
         self.ssim = SSIM(window_size=9, sigma=2.375, n_channels=3, value_range=255)
 
-    def forward(self, target, prediction):
+    def forward(self, prediction, target):
         # range in [0, 255]
         target_ = (target + 1.0) / 2.0 * 255.0
         prediction_ = (prediction + 1.0) / 2.0 * 255.0

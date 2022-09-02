@@ -14,19 +14,33 @@ class BCIBasicTrainer(BCIBaseTrainer):
     def forward(self, train_loader, val_loader):
 
         best_val_psnr = 0.0
+        best_val_clsf = np.inf
         start_time = time.time()
 
+        basic_msg = 'PSNR:{:.4f} SSIM:{:.4f} CLSF:{:.4f} Epoch:{}'
         for epoch in range(self.start_epoch, self.epochs):
             train_metrics = self._train_epoch(train_loader, epoch)
 
             # save model with best val psnr
             val_model = self.Gema if self.ema else self.G
             val_metrics = self._val_epoch(val_model, val_loader, epoch)
-            if val_metrics['psnr'] > best_val_psnr:
-                best_val_psnr = val_metrics['psnr']
+            psnr = val_metrics['psnr']
+            ssim = val_metrics['ssim']
+            clsf = val_metrics['clsf'] if self.apply_cmp else 0.0
+            info_list = [psnr, ssim, clsf, epoch]
+
+            if psnr > best_val_psnr:
+                best_val_psnr = psnr
                 self._save_model(val_model, 'best_psnr')
-                print('>>> Best Val Epoch - Highest PSNR - Save Model <<<')
-                best_psnr_msg = f'- Best PSNR:{best_val_psnr:.4f} in Epoch:{epoch}'
+                print('>>> Highest PSNR - Save Model <<<')
+                psnr_msg = '- Best PSNR: ' + basic_msg.format(*info_list)
+
+            if self.apply_cmp:
+                if clsf < best_val_clsf:
+                    best_val_clsf = clsf
+                    self._save_model(val_model, 'best_clsf')
+                    print('>>> Lowest  CLSF - Save Model <<<')
+                    clsf_msg = '- Best CLSF: ' + basic_msg.format(*info_list)
 
             # save checkpoint regularly
             if (epoch % self.ckpt_freq == 0) or (epoch + 1 == self.epochs):
@@ -36,7 +50,9 @@ class BCIBasicTrainer(BCIBaseTrainer):
             self._save_logs(epoch, train_metrics, val_metrics)
             print()
 
-        print(best_psnr_msg)
+        print(psnr_msg)
+        if self.apply_cmp:
+            print(clsf_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -48,7 +64,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
         self.D.train()
         self.G.train()
 
-        header = 'Train Epoch:[{}]'.format(epoch)
+        header = 'Train:[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
         logger.add_meter('lr', SmoothedValue(1, '{value:.6f}'))
 
@@ -60,46 +76,57 @@ class BCIBasicTrainer(BCIBaseTrainer):
             # lr scheduler on per iteration
             if iter_step % self.accum_iter == 0:
                 self._adjust_learning_rate(iter_step / len(loader) + epoch)
+            logger.update(lr=self.G_opt.param_groups[0]['lr'])
 
             # forward
             he, ihc, level = [d.to(self.device) for d in data]
-            multi_outputs = self.G(he)
-            if len(multi_outputs) == 2:
-                ihc_hr_pred, level_pred = multi_outputs
-                ihc_lr_pred = None
-            elif len(multi_outputs) == 3:
-                ihc_hr_pred, ihc_lr_pred, level_pred = multi_outputs
+            outputs = self.G(he)
+            if not self.G.output_lowres:
+                ihc_phr, he_plevel = outputs
+                ihc_plr = None
+            else:  # self.G.output_lowres is True
+                ihc_phr, ihc_plr, he_plevel = outputs
+
+            # update C
+            if self.apply_cmp and (epoch < self.start_cmp):
+                self.C.train()
+                self._set_requires_grad(self.C, True)
+                ihc_plevel, ihc_platent = self.C(ihc)
+                lossC = self.ccl_loss(ihc_plevel, level)
+                logger.update(Cc=lossC.item())
+                lossC.backward()
+                if (iter_step + 1) % self.accum_iter == 0:
+                    self.C_opt.step()
 
             # update D
             self._set_requires_grad(self.D, True)
-            D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
-            loss_D = (D_fake + D_real) * 0.5
-            loss_D.backward()
+            Dfake, Dreal = self._D_loss(he, ihc, ihc_phr)
+            logger.update(Df=Dfake.item(), Dr=Dreal.item())
+            lossD = (Dfake + Dreal) * 0.5
+            lossD.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
 
             # update G
             self._set_requires_grad(self.D, False)
-            G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
-            G_cls = self.cls_loss(level, level_pred)
-            loss_G = G_gan + G_rec + G_sim + G_cls
-            loss_G.backward()
+            Ggan, Grec, Gsim = self._G_loss(he, ihc, ihc_phr, ihc_plr)
+            Gcls = self.gcl_loss(he_plevel, level)
+            logger.update(Gg=Ggan.item(), Gr=Grec.item(),
+                          Gs=Gsim.item(), Gc=Gcls.item())
+            lossG = Ggan + Grec + Gsim + Gcls
+
+            if self.apply_cmp and (epoch >= self.start_cmp):
+                self.C.eval()
+                self._set_requires_grad(self.C, False)
+                Gcmp = self._C_loss(ihc, ihc_phr, level)
+                logger.update(Gm=Gcmp.item())
+                lossG += Gcmp
+
+            lossG.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
-
-            # update logger
-            logger.update(
-                D_fake=D_fake.item(),
-                D_real=D_real.item(),
-                G_gan=G_gan.item(),
-                G_rec=G_rec.item(),
-                G_sim=G_sim.item(),
-                G_cls=G_cls.item(),
-                lr=self.G_opt.param_groups[0]['lr']
-            )
-
-            if self.ema:
-                self.Gema.update()
+                if self.ema:
+                    self.Gema.update()
 
         logger_info = {
             key: meter.global_avg
@@ -111,58 +138,74 @@ class BCIBasicTrainer(BCIBaseTrainer):
     def _val_epoch(self, val_model, loader, epoch):
 
         val_model.eval()
-
-        header = ' Val  Epoch:[{}]'.format(epoch)
+        header = ' Val :[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
 
         data_iter = logger.log_every(loader)
         for _, data in enumerate(data_iter):
-            he, ihc, _ = [d.to(self.device) for d in data]
-            multi_outputs = val_model(he)
-            ihc_hr_pred = multi_outputs[0]
+            he, ihc, level = [d.to(self.device) for d in data]
+            outputs = val_model(he)
+            ihc_phr = outputs[0]
 
-            psnr, ssim = self.eval_metrics(ihc, ihc_hr_pred)
+            psnr, ssim = self.eval_metrics(ihc_phr, ihc)
             logger.update(psnr=psnr.item(), ssim=ssim.item())
-        
+
+            if self.apply_cmp:
+                self.C.eval()
+                ihc_plevel, ihc_platent = self.C(ihc_phr)
+                clsf = self.ccl_loss(ihc_plevel, level)
+                logger.update(clsf=clsf.item())
+
         logger_info = {
             key: meter.global_avg
             for key, meter in logger.meters.items()
         }
         return logger_info
 
-    def _D_loss(self, he, ihc, ihc_hr_pred):
+    def _D_loss(self, he, ihc, ihc_phr):
 
         # fake
-        fake = self._get_D_input(he, ihc_hr_pred)
-        pred_fake = self.D(fake.detach())
-        D_fake = self.gan_loss(pred_fake, False, for_D=True)
+        fake = self._get_D_input(he, ihc_phr)
+        pfake = self.D(fake.detach())
+        Dfake = self.gan_loss(pfake, False, for_D=True)
 
         # real
         real = self._get_D_input(he, ihc)
-        pred_real = self.D(real)
-        D_real = self.gan_loss(pred_real, True, for_D=True)
+        preal = self.D(real)
+        Dreal = self.gan_loss(preal, True, for_D=True)
 
-        return D_fake, D_real
+        return Dfake, Dreal
 
-    def _G_loss(self, he, ihc, ihc_hr_pred, ihc_lr_pred=None):
+    def _G_loss(self, he, ihc, ihc_phr, ihc_plr=None):
 
         # gan
-        fake = self._get_D_input(he, ihc_hr_pred)
-        pred_fake = self.D(fake)
-        G_gan = self.gan_loss(pred_fake, True, for_D=False)
+        fake = self._get_D_input(he, ihc_phr)
+        pfake = self.D(fake)
+        Ggan = self.gan_loss(pfake, True, for_D=False)
 
         # rec
-        G_rec = self.rec_loss(ihc, ihc_hr_pred)
-        if ihc_lr_pred is not None:
-            _, _, h, w = ihc_lr_pred.size()
-            ihc_low = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
-            G_rec_low = self.rec_loss(ihc_low, ihc_lr_pred)
-            G_rec += G_rec_low * self.low_weight
+        Grec = self.rec_loss(ihc_phr, ihc)
+        if (ihc_plr is not None) and (self.low_weight > 0):
+            _, _, h, w = ihc_plr.size()
+            ihc_lr = F.interpolate(ihc, size=(h, w), mode='bilinear', align_corners=True)
+            Grec_lr = self.rec_loss(ihc_plr, ihc_lr)
+            Grec += Grec_lr * self.low_weight
 
         # sim
-        G_sim = self.sim_loss(ihc, ihc_hr_pred)
+        Gsim = self.sim_loss(ihc_phr, ihc)
 
-        return G_gan, G_rec, G_sim
+        return Ggan, Grec, Gsim
+
+    def _C_loss(self, ihc, ihc_phr, level):
+
+        ihc_phr_plevel, ihc_phr_platent = self.C(ihc_phr)
+        if self.cmp_loss.mode == 'csim':
+            ihc_plevel, ihc_platent = self.C(ihc)
+            Gcmp = self.cmp_loss(ihc_phr_platent, ihc_platent.detach())
+        else:  # self.cmp_loss.mode in ['ce', 'focal']
+            Gcmp = self.cmp_loss(ihc_phr_plevel, level)
+
+        return Gcmp
 
     def _get_D_input(self, he, ihc):
 

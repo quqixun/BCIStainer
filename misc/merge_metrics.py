@@ -28,11 +28,12 @@ if __name__ == '__main__':
                 ssim_std = data['ssim'].std()
 
                 metrics_list.append([
-                    model_name, exp, pred, data_path,
-                    psnr_avg, psnr_std, ssim_avg, ssim_std
+                    model_name, exp, pred,
+                    psnr_avg, psnr_std, ssim_avg, ssim_std,
+                    data_path
                 ])
 
-    columns = ['model', 'exp', 'pred', 'metrics', 'psnr_avg', 'psnr_std', 'ssim_avg', 'ssim_std']
+    columns = ['model', 'exp', 'pred', 'psnr_avg', 'psnr_std', 'ssim_avg', 'ssim_std', 'metrics']
     metrics_df = pd.DataFrame(data=metrics_list, columns=columns)
     metrics_df.sort_values(by=['psnr_avg'],  ascending=False, inplace=True)
     metrics_df.to_csv(output_path, index=False)

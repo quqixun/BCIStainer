@@ -454,6 +454,6 @@ class StyleTranslatorCAHR(nn.Module):
         ihc_hr = merge_func(ihc_full, ihc_crop, mask_crop, crop_idxs)
 
         if self.output_lowres:
-            return ihc_hr, ihc_lr, level
+            return ihc_hr, ihc_lr, ihc_crop, level
         else:
-            return ihc_hr, level
+            return ihc_hr, ihc_crop, level

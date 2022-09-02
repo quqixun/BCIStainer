@@ -13,14 +13,16 @@ def main(args):
     configs = OmegaConf.load(args.config_file)
     output_dir = os.path.join(args.output_root, configs.exp, args.model_name)
     model_path = os.path.join(args.exp_root, configs.exp, f'{args.model_name}.pth')
+    if not os.path.isfile(model_path):
+        print(f'{model_path} is not exist', '\n')
 
     # prints information
-    print('-' * 100)
+    print('-' * 88)
     print('Evaluation for BCI Dataset ...\n')
-    print(f'- Data Dir:   {args.data_dir}')
+    print(f'- Data Dir  : {args.data_dir}')
     print(f'- Model Path: {model_path}')
-    print(f'- Configs:    {args.config_file}')
-    print(f'- Apply TTA:  {args.apply_tta}', '\n')
+    print(f'- Configs   : {args.config_file}')
+    print(f'- Apply TTA : {args.apply_tta}', '\n')
 
     # initializes trainer
     if args.evaluator == 'basic':
@@ -31,7 +33,7 @@ def main(args):
     # generates predictions
     evaluator.forward(args.data_dir, output_dir)
 
-    print('-' * 100, '\n')
+    print('-' * 88, '\n')
     return
 
 

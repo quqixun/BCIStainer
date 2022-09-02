@@ -16,6 +16,15 @@ def main(args):
     init_environment(configs.seed)
     exp_dir = os.path.join(args.exp_root, configs.exp)
 
+    # prints information
+    print('-' * 100)
+    print('Training for BCI Dataset ...\n')
+    print(f'- Train Dir: {args.train_dir}')
+    print(f'-  Val  Dir: {args.val_dir}')
+    print(f'-  Exp  Dir: {exp_dir}')
+    print(f'- Configs  : {args.config_file}')
+    print(f'- Trainer  : {args.trainer}', '\n')
+
     if args.trainer == 'basic':
         # loads dataloder for training and validation
         train_loader = get_dataloader('train', args.train_dir, configs.loader)
@@ -35,6 +44,7 @@ def main(args):
     # training model
     trainer.forward(train_loader, val_loader)
 
+    print('-' * 100, '\n')
     return
 
 

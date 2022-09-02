@@ -96,21 +96,16 @@ class ResnetAdaBlock(nn.Module):
         self.style1  = AdaIN(style_dims, conv_dims)
         self.style2  = AdaIN(style_dims, conv_dims)
         self.dropout = nn.Dropout(dropout) if dropout > 0 else None
-        self.conv1   = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias)
-        )
-        self.conv2   = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias)
-        )
+        conv_params  = dict(kernel_size=3, padding=1, bias=use_bias)
+        self.conv1   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
+        self.conv2   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
 
     def forward(self, x):
         x_in, style = x
         out = self.conv1(x_in)
         out = self.style1(out, style)
         out = self.act(out)
-        out = self.conv2(x_in)
+        out = self.conv2(out)
         out = self.style2(out, style)
         out = self.act(out)
         return (x_in + out) / math.sqrt(2), style
