@@ -229,7 +229,7 @@ class CmpLoss(nn.Module):
 
     def forward(self, target, prediction):
         if self.mode == 'csim':
-            csim = self.csim(target, prediction)
+            csim = self.csim(prediction, target)
             loss = 1 - csim.mean()
         else:  # mode in ['ce', 'focal']
             loss = self.loss(prediction, target)

@@ -51,7 +51,8 @@ class BCIBasicTrainer(BCIBaseTrainer):
             print()
 
         print(psnr_msg)
-        print(clsf_msg)
+        if self.apply_cmp:
+            print(clsf_msg)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -92,7 +93,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
                 self._set_requires_grad(self.C, True)
                 ihc_level, ihc_latent = self.C(ihc)
                 loss_C = self.ccl_loss(level, ihc_level)
-                logger.update(Ccls=loss_C.item())
+                logger.update(Cc=loss_C.item())
                 loss_C.backward()
                 if (iter_step + 1) % self.accum_iter == 0:
                     self.C_opt.step()
@@ -100,7 +101,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
             # update D
             self._set_requires_grad(self.D, True)
             D_fake, D_real = self._D_loss(he, ihc, ihc_hr_pred)
-            logger.update(Dfake=D_fake.item(), Dreal=D_real.item())
+            logger.update(Df=D_fake.item(), Dr=D_real.item())
             loss_D = (D_fake + D_real) * 0.5
             loss_D.backward()
             if (iter_step + 1) % self.accum_iter == 0:
@@ -110,8 +111,8 @@ class BCIBasicTrainer(BCIBaseTrainer):
             self._set_requires_grad(self.D, False)
             G_gan, G_rec, G_sim = self._G_loss(he, ihc, ihc_hr_pred, ihc_lr_pred)
             G_cls = self.gcl_loss(level, he_level_pred)
-            logger.update(Ggan=G_gan.item(), Grec=G_rec.item(),
-                          Gsim=G_sim.item(), Gcls=G_cls.item())
+            logger.update(Gg=G_gan.item(), Gr=G_rec.item(),
+                          Gs=G_sim.item(), Gc=G_cls.item())
             loss_G = G_gan + G_rec + G_sim + G_cls
 
             if self.apply_cmp and (epoch >= self.start_cmp):
@@ -119,7 +120,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
                 self._set_requires_grad(self.C, False)
                 ihc_level, ihc_latent = self.C(ihc)
                 G_cmp = self._C_loss(ihc_latent, ihc_hr_pred, level)
-                logger.update(Gcmp=G_cmp.item())
+                logger.update(Gm=G_cmp.item())
                 loss_G += G_cmp
 
             loss_G.backward()
@@ -138,7 +139,6 @@ class BCIBasicTrainer(BCIBaseTrainer):
     def _val_epoch(self, val_model, loader, epoch):
 
         val_model.eval()
-
         header = ' Val :[{}]'.format(epoch)
         logger = MetricLogger(header, self.print_freq)
 

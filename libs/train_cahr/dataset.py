@@ -169,7 +169,7 @@ class BCICAHRDataset(Dataset):
             return he, ihc, level, he_crop, ihc_crop, crop_idx
         else:  # self.mode == 'val'
             he, ihc, he_crop, crop_idx = self._getitem_val(he, ihc)
-            return he, ihc, he_crop, crop_idx
+            return he, ihc, level, he_crop, crop_idx
 
 
 def get_cahr_dataloader(mode, data_dir, configs):
