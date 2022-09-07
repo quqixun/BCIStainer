@@ -85,10 +85,10 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 50
+  warmup: 60
 
 trainer:
-  epochs:     150
+  epochs:     200
   accum_iter: 1
   diffaug:    false
   ema:        true
@@ -96,7 +96,7 @@ trainer:
   crop_loss:  true
   infer_mode: infer_crop
   apply_cmp:  true
-  start_cmp:  50
+  start_cmp:  60
   ckpt_freq:  1000
   print_freq: 100
 

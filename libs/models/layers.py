@@ -53,7 +53,7 @@ class ConvNormAct(nn.Module):
 
 class ResnetBlock(nn.Module):
 
-    def __init__(self, conv_dimss, norm_layer, dropout, use_bias):
+    def __init__(self, conv_dimss, norm_layer, use_bias):
         super(ResnetBlock, self).__init__()
 
         self.conv = nn.Sequential(
@@ -61,7 +61,6 @@ class ResnetBlock(nn.Module):
             nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
             norm_layer(conv_dimss),
             nn.LeakyReLU(0.2, True),
-            nn.Dropout(dropout),
             nn.ReflectionPad2d(1),
             nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
             norm_layer(conv_dimss),
@@ -89,13 +88,12 @@ class AdaIN(nn.Module):
 
 class ResnetAdaBlock(nn.Module):
 
-    def __init__(self, style_dims, conv_dims, dropout, use_bias):
+    def __init__(self, style_dims, conv_dims, use_bias):
         super(ResnetAdaBlock, self).__init__()
 
         self.act     = nn.LeakyReLU(0.2, True)
         self.style1  = AdaIN(style_dims, conv_dims)
         self.style2  = AdaIN(style_dims, conv_dims)
-        self.dropout = nn.Dropout(dropout) if dropout > 0 else None
         conv_params  = dict(kernel_size=3, padding=1, bias=use_bias)
         self.conv1   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
         self.conv2   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
@@ -180,7 +178,7 @@ class ModConv2d(nn.Module):
 
 class ResnetModBlock(nn.Module):
 
-    def __init__(self, style_dims, conv_dims, dropout, use_bias, style_linear=True):
+    def __init__(self, style_dims, conv_dims, use_bias, style_linear=True):
         super(ResnetModBlock, self).__init__()
 
         self.style_linear = style_linear
@@ -198,8 +196,6 @@ class ResnetModBlock(nn.Module):
             )
         )
         conv1.append(nn.LeakyReLU(0.2, True))
-        if dropout > 0:
-            conv1.append(nn.Dropout(dropout))
         self.conv1 = nn.Sequential(*conv1)
 
         self.conv2 = nn.Sequential(

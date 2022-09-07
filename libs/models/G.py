@@ -93,18 +93,16 @@ class StyleTranslator(nn.Module):
         for i in range(style_blocks):
             if self.style_type == 'ada':
                 layer = ResnetAdaBlock(
-                    style_dims, conv_dims,
-                    dropout=dropout,use_bias=use_bias
+                    style_dims, conv_dims, use_bias=use_bias
                 )
             elif self.style_type == 'mod':
                 layer = ResnetModBlock(
-                    style_dims, conv_dims, dropout=dropout,
-                    use_bias=use_bias, style_linear=style_linear
+                    style_dims, conv_dims, use_bias=use_bias,
+                    style_linear=style_linear
                 )
             else:  # self.style_type == 'none'
                 layer = ResnetBlock(
-                    conv_dims, norm_layer=norm_layer,
-                    dropout=dropout, use_bias=use_bias
+                    conv_dims, norm_layer=norm_layer, use_bias=use_bias
                 )
             decoder1.append(layer)
         self.decoder1 = nn.Sequential(*decoder1)
@@ -247,18 +245,16 @@ class StyleTranslatorCAHR(nn.Module):
         for i in range(style_blocks):
             if self.style_type == 'ada':
                 layer = ResnetAdaBlock(
-                    style_dims, conv_dims,
-                    dropout=dropout,use_bias=use_bias
+                    style_dims, conv_dims, use_bias=use_bias
                 )
             elif self.style_type == 'mod':
                 layer = ResnetModBlock(
-                    style_dims, conv_dims, dropout=dropout,
-                    use_bias=use_bias, style_linear=style_linear
+                    style_dims, conv_dims,  use_bias=use_bias,
+                    style_linear=style_linear
                 )
             else:  # self.style_type == 'none'
                 layer = ResnetBlock(
-                    conv_dims, norm_layer=norm_layer,
-                    dropout=dropout, use_bias=use_bias
+                    conv_dims, norm_layer=norm_layer, use_bias=use_bias
                 )
             decoder1.append(layer)
         self.decoder1 = nn.Sequential(*decoder1)

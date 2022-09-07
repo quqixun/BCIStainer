@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator_cahr_cmp/exp1
+exp:  style_translator_cahr_cmp/exp8
 seed: 42
 
 loader:
@@ -23,8 +23,7 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      mod
-    style_linear:    true
+    style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
@@ -73,7 +72,7 @@ loss:
     mode:   lsgan
     weight: 1.0
   cmp:
-    mode:   focal
+    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -85,18 +84,18 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 60
+  warmup: 50
 
 trainer:
-  epochs:     200
+  epochs:     150
   accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
-  crop_loss:  true
-  infer_mode: infer_crop
+  crop_loss:  false
+  infer_mode: infer_full
   apply_cmp:  true
-  start_cmp:  60
+  start_cmp:  50
   ckpt_freq:  1000
   print_freq: 100
 
