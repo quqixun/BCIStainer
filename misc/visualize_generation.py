@@ -14,18 +14,25 @@ if __name__ == '__main__':
 
     # exp = 
     exps = [
-        'style_translator/exp4',
-        'style_translator/exp5',
+        'style_translator_cahr/exp13',
+        'style_translator_cmp/exp2',
+        'style_translator_cmp/exp4',
         'style_translator/exp6',
+        'style_translator/exp6_1',
+        'style_translator/exp4',
+        'style_translator/exp4_1',
+        'style_translator_cahr/exp9',
+        'style_translator_cahr/exp9_1',
+        'style_translator_cahr/exp14',
         'style_translator_cahr/exp6',
-        'style_translator_cahr/exp9'
+        'style_translator_cahr_cmp/exp4'
     ]
     ihc_pred_dir_base = './evaluations/{}/model_best_psnr_tta/IHC_pred'
 
     files = os.listdir(he_dir)
     files.sort()
 
-    num_cols = 3
+    num_cols = 4
     num_rows = int(np.ceil(len(exps) / num_cols) + 1)
 
     for file in tqdm(files, ncols=66):
