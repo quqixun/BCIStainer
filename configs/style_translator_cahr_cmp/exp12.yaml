@@ -28,7 +28,7 @@ G:
     norm_type:       instance
     dropout:         0.2
     output_lowres:   true
-    mask_dec_input:  dec1
+    mask_dec_input:  enc1
   init:
     init_type: normal
     init_gain: 0.02
@@ -84,10 +84,10 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 50
+  warmup: 60
 
 trainer:
-  epochs:     150
+  epochs:     200
   accum_iter: 1
   diffaug:    false
   ema:        true

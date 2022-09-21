@@ -25,10 +25,10 @@ G:
     encoder1_blocks: 3
     style_type:      ada
     style_blocks:    9
-    norm_type:       instance
+    norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    mask_dec_input:  dec1
+    mask_dec_input:  enc1
   init:
     init_type: normal
     init_gain: 0.02
@@ -95,7 +95,7 @@ trainer:
   crop_loss:  true
   infer_mode: infer_crop
   apply_cmp:  true
-  start_cmp:  60
+  start_cmp:  30
   ckpt_freq:  1000
   print_freq: 100
 

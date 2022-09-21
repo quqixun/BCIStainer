@@ -10,14 +10,10 @@ config_file_list=(
     # ./configs/style_translator/exp4.yaml
     # ./configs/style_translator/exp5.yaml
     # ./configs/style_translator/exp6.yaml
-    ./configs/style_translator/exp7.yaml
-    ./configs/style_translator/exp8.yaml
     # ./configs/style_translator_cmp/exp1.yaml
     # ./configs/style_translator_cmp/exp2.yaml
     # ./configs/style_translator_cmp/exp3.yaml
     # ./configs/style_translator_cmp/exp4.yaml
-    ./configs/style_translator_cmp/exp5.yaml
-    ./configs/style_translator_cmp/exp6.yaml
 )
 
 for config_file in ${config_file_list[@]}; do
