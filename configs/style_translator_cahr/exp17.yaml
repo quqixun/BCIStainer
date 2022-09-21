@@ -1,0 +1,85 @@
+---
+
+
+exp:  style_translator_cahr/exp17
+seed: 42
+
+loader:
+  crop_size:   512
+  random_crop: false
+  norm_method: global_minmax
+  train_batch: 8
+  val_batch:   1
+  num_workers: 20
+  pin_memory:  true
+
+G:
+  name: style_translator_cahr
+  params:
+    full_size:       1024
+    crop_size:       512
+    input_channels:  3
+    output_channels: 3
+    init_channels:   32
+    levels:          4
+    encoder1_blocks: 3
+    style_type:      ada
+    style_blocks:    9
+    norm_type:       instance
+    dropout:         0.2
+    output_lowres:   true
+    mask_dec_input:  dec1
+  init:
+    init_type: normal
+    init_gain: 0.02
+
+D:
+  name: ms_gan
+  params:
+    input_channels: 3
+    init_channels:  32
+    num_layers:     3
+    norm_type:      batch
+    num_depths:     2
+  init:
+    init_type: normal
+    init_gain: 0.02
+
+loss:
+  cls:
+    mode:   focal
+    weight: 5.0
+  rec:
+    mode:   mae
+    weight: 10.0
+  sim:
+    mode:   ssim
+    weight: 1.0
+  gan:
+    mode:   lsgan
+    weight: 1.0
+
+optimizer:
+  name: AdamW
+  params:
+    lr:           0.001
+    betas:        [0.5, 0.9]
+    weight_decay: 0.05
+
+scheduler:
+  min_lr: 0.0
+  warmup: 60
+
+trainer:
+  epochs:     200
+  accum_iter: 1
+  diffaug:    false
+  ema:        true
+  low_weight: 1.0
+  crop_loss:  true
+  infer_mode: infer_crop
+  ckpt_freq:  1000
+  print_freq: 100
+
+
+...
