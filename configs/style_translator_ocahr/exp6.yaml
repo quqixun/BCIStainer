@@ -52,10 +52,10 @@ loss:
     weight: 5.0
   rec:
     mode:   mae
-    weight: 10.0
+    weight: 5.0
   sim:
     mode:   ssim
-    weight: 1.0
+    weight: 3.0
   gan:
     mode:   lsgan
     weight: 1.0

@@ -20,14 +20,14 @@ G:
     crop_size:       512
     input_channels:  3
     output_channels: 3
-    init_channels:   32
+    init_channels:   64
     levels:          4
-    encoder1_blocks: 3
+    encoder1_blocks: 2
     style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
-    output_lowres:   false
+    output_lowres:   true
     mask_dec_input:  dec1
   init:
     init_type: normal

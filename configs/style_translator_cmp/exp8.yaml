@@ -1,12 +1,10 @@
 ---
 
 
-exp:  style_translator_ocahr/exp14
+exp:  style_translator_cmp/exp8
 seed: 42
 
 loader:
-  crop_size:   512
-  random_crop: false
   norm_method: global_minmax
   train_batch: 8
   val_batch:   1
@@ -14,21 +12,19 @@ loader:
   pin_memory:  true
 
 G:
-  name: style_translator_ocahr
+  name: style_translator
   params:
     full_size:       1024
-    crop_size:       512
     input_channels:  3
     output_channels: 3
-    init_channels:   64
+    init_channels:   32
     levels:          4
-    encoder1_blocks: 2
+    encoder1_blocks: 3
     style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    mask_dec_input:  dec1
   init:
     init_type: normal
     init_gain: 0.02
@@ -45,18 +41,34 @@ D:
     init_type: normal
     init_gain: 0.02
 
+C:
+  params:
+    full_size:      1024
+    input_channels: 3
+    init_channels:  32
+    max_channels:   256
+    levels:         4
+    norm_type:      batch
+    dropout:        0.2
+  init:
+    init_type: normal
+    init_gain: 0.02
+
 loss:
   cls:
     mode:   focal
     weight: 5.0
   rec:
     mode:   mae
-    weight: 10.0
+    weight: 5.0
   sim:
     mode:   ssim
-    weight: 1.0
+    weight: 3.0
   gan:
     mode:   lsgan
+    weight: 1.0
+  cmp:
+    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -76,8 +88,8 @@ trainer:
   diffaug:    false
   ema:        true
   low_weight: 1.0
-  crop_loss:  false
-  infer_mode: infer_full
+  apply_cmp:  true
+  start_cmp:  60
   ckpt_freq:  1000
   print_freq: 100
 
