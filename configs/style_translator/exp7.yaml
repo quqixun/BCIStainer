@@ -8,7 +8,7 @@ loader:
   norm_method: global_minmax
   train_batch: 8
   val_batch:   1
-  num_workers: 20
+  num_workers: 10
   pin_memory:  true
 
 G:
@@ -47,7 +47,7 @@ loss:
     mode:   focal
     weight: 5.0
   rec:
-    mode:   mae
+    mode:   lpips
     weight: 5.0
   sim:
     mode:   ssim
