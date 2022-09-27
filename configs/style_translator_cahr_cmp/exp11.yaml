@@ -46,6 +46,7 @@ D:
     init_gain: 0.02
 
 C:
+  name: simple
   params:
     full_size:      1024
     input_channels: 3
