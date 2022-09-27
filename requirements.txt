@@ -11,4 +11,3 @@ pandas
 piqa
 lpips
 git+https://github.com/lucidrains/ema-pytorch.git
-git+https://github.com/lucidrains/Adan-pytorch.git
