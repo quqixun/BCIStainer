@@ -51,7 +51,7 @@ def check_evaluate_args(args):
     if not os.path.isfile(args.config_file):
         raise IOError(f'config_file {args.config_file} is not exist')
 
-    model_name_list = ['model_best_psnr', 'model_best_ssim', 'model_latest']
+    model_name_list = ['model_best_psnr', 'model_best_ssim', 'model_best_clsf']
     if args.model_name not in model_name_list:
         raise ValueError(f'model_name {args.model_name} is not supportted')
 
