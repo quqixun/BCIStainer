@@ -34,7 +34,8 @@ class StyleTranslator(nn.Module):
         style_blocks=9,
         norm_type='batch',
         dropout=0.2,
-        output_lowres=True
+        output_lowres=True,
+        attention=False
     ):
         super(StyleTranslator, self).__init__()
 
@@ -46,7 +47,7 @@ class StyleTranslator(nn.Module):
             in_dims=input_channels, out_dims=init_channels,
             conv_type='conv2d', kernel_size=7, stride=1,
             padding=3, bias=use_bias, norm_layer=norm_layer,
-            sampling='none'
+            sampling='none', attention=attention
         )
 
         encoder1 = []
@@ -59,7 +60,7 @@ class StyleTranslator(nn.Module):
                     in_dims=in_dims, out_dims=out_dims,
                     conv_type='conv2d', kernel_size=3, stride=2,
                     padding=1, bias=use_bias, norm_layer=norm_layer,
-                    sampling='none'
+                    sampling='none', attention=attention
                 )
             )
         self.encoder1 = nn.Sequential(*encoder1)
@@ -75,7 +76,7 @@ class StyleTranslator(nn.Module):
                     in_dims=style_dims, out_dims=style_dims,
                     conv_type='conv2d', kernel_size=3, stride=2,
                     padding=1, bias=use_bias, norm_layer=norm_layer,
-                    sampling='none'
+                    sampling='none', attention=attention
                 )
             )
         encoder2.append(nn.AdaptiveAvgPool2d(1))
@@ -95,16 +96,23 @@ class StyleTranslator(nn.Module):
         for i in range(style_blocks):
             if self.style_type == 'ada':
                 layer = ResnetAdaBlock(
-                    style_dims, conv_dims, use_bias=use_bias
+                    style_dims, conv_dims,
+                    use_bias=use_bias,
+                    attention=attention
                 )
             elif self.style_type == 'mod':
                 layer = ResnetModBlock(
-                    style_dims, conv_dims, use_bias=use_bias,
-                    style_linear=style_linear
+                    style_dims, conv_dims,
+                    use_bias=use_bias,
+                    style_linear=style_linear,
+                    attention=attention
                 )
             else:  # self.style_type == 'none'
                 layer = ResnetBlock(
-                    conv_dims, norm_layer=norm_layer, use_bias=use_bias
+                    conv_dims,
+                    norm_layer=norm_layer,
+                    use_bias=use_bias,
+                    attention=attention
                 )
             decoder1.append(layer)
         self.decoder1 = nn.Sequential(*decoder1)
@@ -633,7 +641,7 @@ class StyleTranslatorOriCAHR(nn.Module):
         mask_full = interpolate(mask_full, self.full_shape)
 
         mask_full_mask = torch.zeros_like(mask_full)
-        if mask_full_mask.size(0) != crop_idxs.size(0):
+        if mask_full_mask.size(0) != crop_idxs.size(0):  # infer
             mask_full_mask = torch.cat([mask_full_mask] * crop_idxs.size(0))
         for i in range(mask_full.size(0)):
             row1, col1 = crop_idxs[i]
@@ -689,8 +697,8 @@ class StyleTranslatorOriCAHR(nn.Module):
     def _infer_full_merge(self, ihc_full, ihc_crop, mask_full, crop_idxs):
         assert ihc_full.size(0) == 1
 
-        ihc_full  = ihc_full.squeeze(0)
-        ihc_hr    = torch.zeros_like(ihc_full)
+        ihc_full = ihc_full.squeeze(0)
+        ihc_hr   = torch.zeros_like(ihc_full)
 
         for i in range(ihc_crop.size(0)):
             row1, col1 = crop_idxs[i]

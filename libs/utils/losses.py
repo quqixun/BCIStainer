@@ -1,5 +1,6 @@
 import lpips
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -254,3 +255,19 @@ class EvalMetrics(nn.Module):
         ssim = self.ssim(prediction_, target_)
 
         return psnr, ssim
+
+
+def calculate_fid(real_embeddings, generated_embeddings):
+    # calculate mean and covariance statistics
+    mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
+    mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(generated_embeddings, rowvar=False)
+    # calculate sum squared difference between means
+    ssdiff = np.sum((mu1 - mu2) ** 2.0)
+    # calculate sqrt of product between cov
+    covmean = np.linalg.sqrtm(sigma1.dot(sigma2))
+    # check and correct imaginary numbers from sqrt
+    if np.iscomplexobj(covmean):
+        covmean = covmean.real
+    # calculate score
+    fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
+    return fid

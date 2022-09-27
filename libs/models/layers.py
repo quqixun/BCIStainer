@@ -5,11 +5,29 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class SimAM(nn.Module):
+
+    def __init__(self, e_lambda=1e-4):
+        super(SimAM, self).__init__()
+        self.e_lambda = e_lambda
+
+    def forward(self, x):
+
+        _, _, h, w = x.size()
+        n = w * h - 1
+        d = (x - x.mean(dim=[2, 3], keepdim=True)).pow(2)
+        v = d.sum(dim=[2, 3], keepdim=True) / n
+        e_inv = d / (4 * (v + self.e_lambda)) + 0.5
+
+        return x * torch.sigmoid(e_inv)
+
+
 class ConvNormAct(nn.Module):
 
     def __init__(self, in_dims, out_dims, conv_type='conv2d',
-                 kernel_size=3, stride=1, padding=1, bias=True,
-                 norm_layer=nn.BatchNorm2d, sampling='none'):
+                 kernel_size=3, stride=1, padding=1, bias=False,
+                 norm_layer=nn.BatchNorm2d, sampling='none',
+                 attention=False):
         super(ConvNormAct, self).__init__()
 
         assert sampling in ['down', 'up', 'none']
@@ -17,22 +35,50 @@ class ConvNormAct(nn.Module):
 
         assert conv_type in ['conv2d', 'convTranspose2d']
         self.conv_type = conv_type
+
+        layers = []
         if self.conv_type == 'conv2d':
-            self.conv = nn.Sequential(
+            layers += [
                 nn.ReflectionPad2d(padding),
-                nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
-                          stride=stride, padding=0, bias=bias),
-                norm_layer(out_dims),
-                nn.LeakyReLU(0.2, True)
-            )
+                nn.Conv2d(
+                    in_dims, out_dims, kernel_size=kernel_size,
+                    stride=stride, padding=0, bias=bias
+                )
+            ]
+            # self.conv = nn.Sequential(
+            #     nn.ReflectionPad2d(padding),
+            #     nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
+            #               stride=stride, padding=0, bias=bias),
+            #     SimAM() if attention else nn.Identity(),
+            #     norm_layer(out_dims),
+            #     nn.LeakyReLU(0.2, True)
+            # )
         else:  # self.conv_type == 'convTranspose2d'
-            self.conv = nn.Sequential(
-                nn.ConvTranspose2d(in_dims, out_dims, kernel_size=kernel_size,
-                                   stride=stride, padding=padding,
-                                   output_padding=padding, bias=bias),
-                norm_layer(out_dims),
-                nn.LeakyReLU(0.2, True)
-            )
+                layers += [
+                    nn.ConvTranspose2d(
+                        in_dims, out_dims, kernel_size=kernel_size,
+                        stride=stride, padding=padding,
+                        output_padding=padding, bias=bias
+                    )
+                ]
+            # self.conv = nn.Sequential(
+            #     nn.ConvTranspose2d(in_dims, out_dims, kernel_size=kernel_size,
+            #                        stride=stride, padding=padding,
+            #                        output_padding=padding, bias=bias),
+            #     SimAM() if attention else nn.Identity(),
+            #     norm_layer(out_dims),
+            #     nn.LeakyReLU(0.2, True)
+            # )
+
+        if attention:
+            layers += [SimAM()]
+        
+        layers += [
+            norm_layer(out_dims),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        self.conv = nn.Sequential(*layers)
 
     def forward(self, x):
 
@@ -53,19 +99,39 @@ class ConvNormAct(nn.Module):
 
 class ResnetBlock(nn.Module):
 
-    def __init__(self, conv_dimss, norm_layer, use_bias):
+    def __init__(self, conv_dims, norm_layer, use_bias, attention=False):
         super(ResnetBlock, self).__init__()
 
-        self.conv = nn.Sequential(
+        layers = [
             nn.ReflectionPad2d(1),
-            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
-            norm_layer(conv_dimss),
+            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
+            norm_layer(conv_dims),
             nn.LeakyReLU(0.2, True),
             nn.ReflectionPad2d(1),
-            nn.Conv2d(conv_dimss, conv_dimss, kernel_size=3, padding=0, bias=use_bias),
-            norm_layer(conv_dimss),
+            nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
+        ]
+
+        if attention:
+            layers += [SimAM()]
+        
+        layers += [
+            norm_layer(conv_dims),
             nn.LeakyReLU(0.2, True)
-        )
+        ]
+
+        self.conv = nn.Sequential(*layers)
+
+        # self.conv = nn.Sequential(
+        #     nn.ReflectionPad2d(1),
+        #     nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
+        #     norm_layer(conv_dims),
+        #     nn.LeakyReLU(0.2, True),
+        #     nn.ReflectionPad2d(1),
+        #     nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
+        #     SimAM() if attention else nn.Identity(),
+        #     norm_layer(conv_dims),
+        #     nn.LeakyReLU(0.2, True)
+        # )
 
     def forward(self, x):
         return (x + self.conv(x)) / math.sqrt(2)
@@ -88,15 +154,16 @@ class AdaIN(nn.Module):
 
 class ResnetAdaBlock(nn.Module):
 
-    def __init__(self, style_dims, conv_dims, use_bias):
+    def __init__(self, style_dims, conv_dims, use_bias, attention=False):
         super(ResnetAdaBlock, self).__init__()
 
-        self.act     = nn.LeakyReLU(0.2, True)
-        self.style1  = AdaIN(style_dims, conv_dims)
-        self.style2  = AdaIN(style_dims, conv_dims)
-        conv_params  = dict(kernel_size=3, padding=1, bias=use_bias)
-        self.conv1   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
-        self.conv2   = nn.Conv2d(conv_dims, conv_dims, **conv_params)
+        self.act    = nn.LeakyReLU(0.2, True)
+        self.style1 = AdaIN(style_dims, conv_dims)
+        self.style2 = AdaIN(style_dims, conv_dims)
+        conv_params = dict(kernel_size=3, padding=1, bias=use_bias)
+        self.conv1  = nn.Conv2d(conv_dims, conv_dims, **conv_params)
+        self.conv2  = nn.Conv2d(conv_dims, conv_dims, **conv_params)
+        self.atten  = SimAM() if attention else None
 
     def forward(self, x):
         x_in, style = x
@@ -104,6 +171,8 @@ class ResnetAdaBlock(nn.Module):
         out = self.style1(out, style)
         out = self.act(out)
         out = self.conv2(out)
+        if self.atten:
+            out = self.atten(out)
         out = self.style2(out, style)
         out = self.act(out)
         return (x_in + out) / math.sqrt(2), style
@@ -178,7 +247,7 @@ class ModConv2d(nn.Module):
 
 class ResnetModBlock(nn.Module):
 
-    def __init__(self, style_dims, conv_dims, use_bias, style_linear=True):
+    def __init__(self, style_dims, conv_dims, use_bias, style_linear=True, attention=False):
         super(ResnetModBlock, self).__init__()
 
         self.style_linear = style_linear
@@ -206,6 +275,8 @@ class ResnetModBlock(nn.Module):
             nn.LeakyReLU(0.2, True)
         )
 
+        self.atten = SimAM() if attention else None
+
     def forward(self, x):
         x_in, style = x
         if self.style_linear:
@@ -214,4 +285,8 @@ class ResnetModBlock(nn.Module):
         else:
             out = self.conv1((x_in, style))
             out = self.conv2((out, style))
+        
+        if self.atten:
+            out = self.atten(out)
+
         return (x_in + out) / math.sqrt(2), style
