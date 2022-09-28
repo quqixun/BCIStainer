@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator_cmp/exp6
+exp:  style_translator_cmp/exp7
 seed: 42
 
 loader:
@@ -26,7 +26,7 @@ G:
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    attention:       false
+    attention:       true
   init:
     init_type: normal
     init_gain: 0.02

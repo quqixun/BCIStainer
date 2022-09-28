@@ -1,7 +1,7 @@
 ---
 
 
-exp:  style_translator_cmp/exp6
+exp:  style_translator_cmp/exp8
 seed: 42
 
 loader:
@@ -44,15 +44,12 @@ D:
     init_gain: 0.02
 
 C:
-  name: simple
+  name: mobilenetv2
   params:
-    full_size:      1024
-    input_channels: 3
-    init_channels:  32
-    max_channels:   256
-    levels:         4
-    norm_type:      batch
-    dropout:        0.2
+    levels:     4
+    width_mult: 1.0
+    norm_type:  batch
+    dropout:    0.2
   init:
     init_type: normal
     init_gain: 0.02

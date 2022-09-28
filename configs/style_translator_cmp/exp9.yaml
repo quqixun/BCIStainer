@@ -1,12 +1,12 @@
 ---
 
 
-exp:  style_translator/exp8
+exp:  style_translator_cmp/exp9
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 1
+  train_batch: 6
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -39,7 +39,17 @@ D:
     num_layers:     3
     norm_type:      batch
     num_depths:     2
-    attention:      true
+  init:
+    init_type: normal
+    init_gain: 0.02
+
+C:
+  name: mobilenetv2
+  params:
+    levels:     4
+    width_mult: 1.0
+    norm_type:  batch
+    dropout:    0.2
   init:
     init_type: normal
     init_gain: 0.02
@@ -50,12 +60,15 @@ loss:
     weight: 5.0
   rec:
     mode:   mae
-    weight: 5.0
+    weight: 10.0
   sim:
     mode:   ssim
-    weight: 3.0
+    weight: 1.0
   gan:
     mode:   lsgan
+    weight: 1.0
+  cmp:
+    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -71,10 +84,12 @@ scheduler:
 
 trainer:
   epochs:     200
-  accum_iter: 8
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  apply_cmp:  true
+  start_cmp:  60
   ckpt_freq:  1000
   print_freq: 100
 

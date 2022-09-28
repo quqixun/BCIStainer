@@ -1,11 +1,7 @@
 #!/bin/bash
 
 
-model_name=model_best_psnr
-apply_tta_list=(false true)
-
-
-evaluator=basic
+trainer=basic
 config_file_list=(
     # ./configs/style_translator/exp4.yaml
     # ./configs/style_translator/exp5.yaml
@@ -17,28 +13,25 @@ config_file_list=(
     # ./configs/style_translator_cmp/exp4.yaml
     # ./configs/style_translator_cmp/exp5.yaml
     # ./configs/style_translator_cmp/exp6.yaml
-    # ./configs/style_translator_cmp/exp7.yaml
+    ./configs/style_translator_cmp/exp7.yaml
     # ./configs/style_translator_cmp/exp8.yaml
     # ./configs/style_translator_cmp/exp9.yaml
 )
 
 for config_file in ${config_file_list[@]}; do
-for apply_tta in ${apply_tta_list[@]}; do
 
-    CUDA_VISIBLE_DEVICES=0            \
-    python evaluate.py                \
-        --data_dir    ./data/test     \
-        --exp_root    ./experiments   \
-        --output_root ./evaluations   \
-        --config_file $config_file    \
-        --model_name  $model_name     \
-        --apply_tta   $apply_tta      \
-        --evaluator   $evaluator
+    CUDA_VISIBLE_DEVICES=1          \
+    python train.py                 \
+        --train_dir   ./data/train  \
+        --val_dir     ./data/val    \
+        --exp_root    ./experiments \
+        --config_file $config_file  \
+        --trainer     $trainer
 
-done; done
+done
 
 
-evaluator=cahr
+trainer=cahr
 config_file_list=(
     # ./configs/style_translator_cahr/exp6.yaml
     # ./configs/style_translator_cahr/exp9.yaml
@@ -63,20 +56,17 @@ config_file_list=(
     # ./configs/style_translator_cahr_cmp/exp11.yaml
     # ./configs/style_translator_cahr_cmp/exp12.yaml
     # ./configs/style_translator_cahr_cmp/exp13.yaml
-    ./configs/style_translator_cahr_cmp/exp14.yaml
+    # ./configs/style_translator_cahr_cmp/exp14.yaml
 )
 
 for config_file in ${config_file_list[@]}; do
-for apply_tta in ${apply_tta_list[@]}; do
 
-    CUDA_VISIBLE_DEVICES=0            \
-    python evaluate.py                \
-        --data_dir    ./data/test     \
-        --exp_root    ./experiments   \
-        --output_root ./evaluations   \
-        --config_file $config_file    \
-        --model_name  $model_name     \
-        --apply_tta   $apply_tta      \
-        --evaluator   $evaluator
+    CUDA_VISIBLE_DEVICES=1          \
+    python train.py                 \
+        --train_dir   ./data/train  \
+        --val_dir     ./data/val    \
+        --exp_root    ./experiments \
+        --config_file $config_file  \
+        --trainer     $trainer
 
-done; done
+done
