@@ -15,7 +15,7 @@ from skimage.metrics import peak_signal_noise_ratio
 from ..utils import normalize_image, unnormalize_image, tta, untta
 
 
-class BCICAHREvaluator(object):
+class BCIEvaluatorCAHR(object):
 
     def __init__(self, configs, model_path, apply_tta=False):
 

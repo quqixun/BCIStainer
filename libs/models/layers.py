@@ -45,30 +45,14 @@ class ConvNormAct(nn.Module):
                     stride=stride, padding=0, bias=bias
                 )
             ]
-            # self.conv = nn.Sequential(
-            #     nn.ReflectionPad2d(padding),
-            #     nn.Conv2d(in_dims, out_dims, kernel_size=kernel_size,
-            #               stride=stride, padding=0, bias=bias),
-            #     SimAM() if attention else nn.Identity(),
-            #     norm_layer(out_dims),
-            #     nn.LeakyReLU(0.2, True)
-            # )
         else:  # self.conv_type == 'convTranspose2d'
-                layers += [
-                    nn.ConvTranspose2d(
-                        in_dims, out_dims, kernel_size=kernel_size,
-                        stride=stride, padding=padding,
-                        output_padding=padding, bias=bias
-                    )
-                ]
-            # self.conv = nn.Sequential(
-            #     nn.ConvTranspose2d(in_dims, out_dims, kernel_size=kernel_size,
-            #                        stride=stride, padding=padding,
-            #                        output_padding=padding, bias=bias),
-            #     SimAM() if attention else nn.Identity(),
-            #     norm_layer(out_dims),
-            #     nn.LeakyReLU(0.2, True)
-            # )
+            layers += [
+                nn.ConvTranspose2d(
+                    in_dims, out_dims, kernel_size=kernel_size,
+                    stride=stride, padding=padding,
+                    output_padding=padding, bias=bias
+                )
+            ]
 
         if attention:
             layers += [SimAM()]
@@ -120,18 +104,6 @@ class ResnetBlock(nn.Module):
         ]
 
         self.conv = nn.Sequential(*layers)
-
-        # self.conv = nn.Sequential(
-        #     nn.ReflectionPad2d(1),
-        #     nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
-        #     norm_layer(conv_dims),
-        #     nn.LeakyReLU(0.2, True),
-        #     nn.ReflectionPad2d(1),
-        #     nn.Conv2d(conv_dims, conv_dims, kernel_size=3, padding=0, bias=use_bias),
-        #     SimAM() if attention else nn.Identity(),
-        #     norm_layer(conv_dims),
-        #     nn.LeakyReLU(0.2, True)
-        # )
 
     def forward(self, x):
         return (x + self.conv(x)) / math.sqrt(2)

@@ -26,9 +26,9 @@ def main(args):
 
     # initializes trainer
     if args.evaluator == 'basic':
-        evaluator = BCIBasicEvaluator(configs, model_path, apply_tta)
+        evaluator = BCIEvaluatorBasic(configs, model_path, apply_tta)
     elif args.evaluator == 'cahr':
-        evaluator = BCICAHREvaluator(configs, model_path, apply_tta)
+        evaluator = BCIEvaluatorCAHR(configs, model_path, apply_tta)
 
     # generates predictions
     evaluator.forward(args.data_dir, output_dir)

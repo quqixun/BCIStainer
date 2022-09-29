@@ -61,25 +61,14 @@ class NLayerDiscriminator(nn.Module):
 
         norm_layer = get_norm_layer(norm_type=norm_type)
         use_bias = False if norm_type == 'batch' else True
-        # if type(norm_layer) == functools.partial:
-        #     use_bias = norm_layer.func == nn.InstanceNorm2d
-        # else:
-        #     use_bias = norm_layer == nn.InstanceNorm2d
+        kw, padw = 4, 1
 
-        kw = 4
-        padw = 1
         sequence = [
-            # nn.Conv2d(
-            #     input_channels, init_channels,
-            #     kernel_size=kw, stride=2, padding=padw
-            # ),
-            # norm_layer(init_channels),
-            # nn.LeakyReLU(0.2, True)
             ConvNormAct(
                 in_dims=input_channels, out_dims=init_channels,
-                conv_type='conv2d', kernel_size=3, stride=2, padding=1,
+                conv_type='conv2d', kernel_size=kw, stride=2, padding=padw,
                 bias=use_bias, norm_layer=norm_layer, sampling='none',
-                attention=attention
+                attention=False
             )
         ]
 
@@ -91,15 +80,9 @@ class NLayerDiscriminator(nn.Module):
             in_dims = init_channels * nf_mult_prev
             out_dims = init_channels * nf_mult
             sequence += [
-                # nn.Conv2d(
-                #     init_channels * nf_mult_prev, init_channels * nf_mult,
-                #     kernel_size=kw, stride=2, padding=padw, bias=use_bias
-                # ),
-                # norm_layer(init_channels * nf_mult),
-                # nn.LeakyReLU(0.2, True)
                 ConvNormAct(
                     in_dims=in_dims, out_dims=out_dims,
-                    conv_type='conv2d', kernel_size=3, stride=2, padding=1,
+                    conv_type='conv2d', kernel_size=kw, stride=2, padding=padw,
                     bias=use_bias, norm_layer=norm_layer, sampling='none',
                     attention=attention
                 )
@@ -110,15 +93,9 @@ class NLayerDiscriminator(nn.Module):
         in_dims = init_channels * nf_mult_prev
         out_dims = init_channels * nf_mult
         sequence += [
-            # nn.Conv2d(
-            #     init_channels * nf_mult_prev, init_channels * nf_mult,
-            #     kernel_size=kw, stride=1, padding=padw, bias=use_bias
-            # ),
-            # norm_layer(init_channels * nf_mult),
-            # nn.LeakyReLU(0.2, True)
             ConvNormAct(
                 in_dims=in_dims, out_dims=out_dims,
-                conv_type='conv2d', kernel_size=3, stride=1, padding=1,
+                conv_type='conv2d', kernel_size=kw, stride=1, padding=padw,
                 bias=use_bias, norm_layer=norm_layer, sampling='none',
                 attention=attention
             )
@@ -126,7 +103,7 @@ class NLayerDiscriminator(nn.Module):
 
         sequence += [
             nn.Conv2d(
-                init_channels * nf_mult, 1,
+                out_dims, 1,
                 kernel_size=kw, stride=1, padding=padw
             )
         ]

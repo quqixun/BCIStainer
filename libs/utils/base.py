@@ -5,7 +5,6 @@ import torch
 
 from .losses import *
 from ema_pytorch import EMA
-from adan_pytorch import Adan
 from ..models import define_G, define_D, define_C
 
 

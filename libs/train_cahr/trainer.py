@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from ..utils import *
 
 
-class BCICAHRTrainer(BCIBaseTrainer):
+class BCITrainerCAHR(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
-        super(BCICAHRTrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        super(BCITrainerCAHR, self).__init__(configs, exp_dir, resume_ckpt)
         self.crop_loss  = self.configs.trainer.crop_loss
         self.infer_mode = self.configs.trainer.infer_mode
 

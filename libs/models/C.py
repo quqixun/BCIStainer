@@ -9,12 +9,12 @@ from torchvision.models.shufflenetv2 import ShuffleNetV2
 
 def define_C(configs):
 
-    if configs.name == 'simple':
-        net = SimpleComparator(**configs.params)
-    elif configs.name == 'mobilenetv2':
-        net = MobileNetV2Comparator(**configs.params)
-    elif configs.name == 'shufflenetv2':
-        net = ShuffleNetV2Comparator(**configs.params)
+    if configs.name == 'comparator_basic':
+        net = ComparatorBasic(**configs.params)
+    elif configs.name == 'comparator_mobilenetv2':
+        net = ComparatorMobileNetV2(**configs.params)
+    elif configs.name == 'comparator_shufflenetv2':
+        net = ComparatorShuffleNetV2(**configs.params)
     else:
         raise NotImplementedError(f'unknown C model name {configs.name}')
 
@@ -22,7 +22,7 @@ def define_C(configs):
     return net
 
 
-class SimpleComparator(nn.Module):
+class ComparatorBasic(nn.Module):
 
     def __init__(self,
         full_size=1024,
@@ -31,9 +31,10 @@ class SimpleComparator(nn.Module):
         max_channels=256,
         levels=4,
         norm_type='batch',
-        dropout=0.2
+        dropout=0.2,
+        attention=False
     ):
-        super(SimpleComparator, self).__init__()
+        super(ComparatorBasic, self).__init__()
 
         assert norm_type in ['batch', 'instance', 'none']
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -44,7 +45,7 @@ class SimpleComparator(nn.Module):
                 in_dims=input_channels, out_dims=init_channels,
                 conv_type='conv2d', kernel_size=7, stride=2,
                 padding=3, bias=use_bias, norm_layer=norm_layer,
-                sampling='none'
+                sampling='none', attention=False
             )
         ]
 
@@ -58,7 +59,7 @@ class SimpleComparator(nn.Module):
                     in_dims=in_dims, out_dims=out_dims,
                     conv_type='conv2d', kernel_size=3, stride=2,
                     padding=1, bias=use_bias, norm_layer=norm_layer,
-                    sampling='none'
+                    sampling='none', attention=attention
                 )
             )
         encoder.append(nn.AdaptiveAvgPool2d(1))
@@ -77,7 +78,7 @@ class SimpleComparator(nn.Module):
         return levels, latent
 
 
-class MobileNetV2Comparator(nn.Module):
+class ComparatorMobileNetV2(nn.Module):
 
     def __init__(self,
         levels=4,
@@ -85,7 +86,7 @@ class MobileNetV2Comparator(nn.Module):
         norm_type='batch',
         dropout=0.2
     ):
-        super(MobileNetV2Comparator, self).__init__()
+        super(ComparatorMobileNetV2, self).__init__()
 
         assert norm_type in ['batch', 'instance', 'none']
         norm_layer = get_norm_layer(norm_type=norm_type)
@@ -111,10 +112,10 @@ class MobileNetV2Comparator(nn.Module):
         return levels, latent
 
 
-class ShuffleNetV2Comparator(nn.Module):
+class ComparatorShuffleNetV2(nn.Module):
 
     def __init__(self, levels=4, width_mult=1.0):
-        super(ShuffleNetV2Comparator, self).__init__()
+        super(ComparatorShuffleNetV2, self).__init__()
         assert width_mult in [0.5, 1.0, 1.5, 2.0]
 
         if width_mult == 0.5:
@@ -148,21 +149,3 @@ class ShuffleNetV2Comparator(nn.Module):
         latent = latent.mean([2, 3])  # globalpool
         levels = self.classify_head(latent)
         return levels, latent
-
-
-if __name__ == '__main__':
-
-    # model = MobileNetV2Comparator(
-    #     levels=4,
-    #     width_mult=1.0,
-    #     norm_type='batch',
-    #     dropout=0.2
-    # ).cuda()
-
-    model = MobileNetV2Comparator(levels=4, width_mult=1.0).cuda()
-
-    print(model)
-
-    x = torch.rand(2, 3, 1024, 1024).cuda()
-    levels, latent = model(x)
-    print(levels.size(), latent.size())

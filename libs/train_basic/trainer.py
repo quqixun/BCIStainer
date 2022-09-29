@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from ..utils import *
 
 
-class BCIBasicTrainer(BCIBaseTrainer):
+class BCITrainerBasic(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
-        super(BCIBasicTrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        super(BCITrainerBasic, self).__init__(configs, exp_dir, resume_ckpt)
 
     def forward(self, train_loader, val_loader):
 
@@ -103,6 +103,8 @@ class BCIBasicTrainer(BCIBaseTrainer):
             Dfake, Dreal = self._D_loss(he, ihc, ihc_phr)
             logger.update(Df=Dfake.item(), Dr=Dreal.item())
             lossD = (Dfake + Dreal) * 0.5
+
+            lossD /= self.accum_iter
             lossD.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
@@ -122,6 +124,7 @@ class BCIBasicTrainer(BCIBaseTrainer):
                 logger.update(Gm=Gcmp.item())
                 lossG += Gcmp
 
+            lossG /= self.accum_iter
             lossG.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
