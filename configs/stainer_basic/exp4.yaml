@@ -1,23 +1,20 @@
 ---
 
 
-exp:  style_translator_cahr/exp17
+exp:  stainer_basic/exp4
 seed: 42
 
 loader:
-  crop_size:   512
-  random_crop: false
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 4
   val_batch:   1
-  num_workers: 20
+  num_workers: 10
   pin_memory:  true
 
 G:
-  name: style_translator_cahr
+  name: stainer_basic
   params:
     full_size:       1024
-    crop_size:       512
     input_channels:  3
     output_channels: 3
     init_channels:   32
@@ -28,19 +25,18 @@ G:
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    mask_dec_input:  dec1
+    attention:       true
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: ms_gan
+  name: patch_gan
   params:
     input_channels: 3
     init_channels:  32
-    num_layers:     3
+    num_layers:     4
     norm_type:      batch
-    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
@@ -51,10 +47,10 @@ loss:
     weight: 5.0
   rec:
     mode:   mae
-    weight: 5.0
+    weight: 10.0
   sim:
     mode:   ssim
-    weight: 3.0
+    weight: 1.0
   gan:
     mode:   lsgan
     weight: 1.0
@@ -68,18 +64,16 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 60
+  warmup: 50
 
 trainer:
-  epochs:     200
-  accum_iter: 1
+  epochs:     150
+  accum_iter: 2
   diffaug:    false
   ema:        true
   low_weight: 1.0
-  crop_loss:  true
-  infer_mode: infer_crop
   ckpt_freq:  1000
-  print_freq: 100
+  print_freq: 200
 
 
 ...

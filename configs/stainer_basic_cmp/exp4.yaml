@@ -1,18 +1,18 @@
 ---
 
 
-exp:  style_translator_cmp/exp6
+exp:  stainer_basic_cmp/exp4
 seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 4
   val_batch:   1
   num_workers: 10
   pin_memory:  true
 
 G:
-  name: style_translator
+  name: stainer_basic
   params:
     full_size:       1024
     input_channels:  3
@@ -20,31 +20,29 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      mod
-    style_linear:    true
+    style_type:      ada
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    attention:       false
+    attention:       true
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: ms_gan
+  name: patch_gan
   params:
     input_channels: 3
     init_channels:  32
-    num_layers:     3
+    num_layers:     4
     norm_type:      batch
-    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
 
 C:
-  name: simple
+  name: comparator_basic
   params:
     full_size:      1024
     input_channels: 3
@@ -83,16 +81,16 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 60
+  warmup: 50
 
 trainer:
-  epochs:     200
-  accum_iter: 1
+  epochs:     150
+  accum_iter: 2
   diffaug:    false
   ema:        true
   low_weight: 1.0
   apply_cmp:  true
-  start_cmp:  60
+  start_cmp:  50
   ckpt_freq:  1000
   print_freq: 100
 

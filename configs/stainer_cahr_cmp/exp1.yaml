@@ -1,20 +1,23 @@
 ---
 
 
-exp:  style_translator_cmp/exp9
+exp:  stainer_cahr_cmp/exp1
 seed: 42
 
 loader:
+  crop_size:   512
+  random_crop: false
   norm_method: global_minmax
-  train_batch: 6
+  train_batch: 4
   val_batch:   1
   num_workers: 10
   pin_memory:  true
 
 G:
-  name: style_translator
+  name: stainer_cahr
   params:
     full_size:       1024
+    crop_size:       512
     input_channels:  3
     output_channels: 3
     init_channels:   32
@@ -26,30 +29,32 @@ G:
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    attention:       true
+    mask_dec_input:  dec1
   init:
     init_type: normal
     init_gain: 0.02
 
 D:
-  name: ms_gan
+  name: patch_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
-    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
 
 C:
-  name: mobilenetv2
+  name: comparator_basic
   params:
-    levels:     4
-    width_mult: 1.0
-    norm_type:  batch
-    dropout:    0.2
+    full_size:      1024
+    input_channels: 3
+    init_channels:  32
+    max_channels:   256
+    levels:         4
+    norm_type:      batch
+    dropout:        0.2
   init:
     init_type: normal
     init_gain: 0.02
@@ -80,18 +85,20 @@ optimizer:
 
 scheduler:
   min_lr: 0.0
-  warmup: 60
+  warmup: 50
 
 trainer:
-  epochs:     200
-  accum_iter: 1
+  epochs:     150
+  accum_iter: 2
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  crop_loss:  true
+  infer_mode: infer_crop
   apply_cmp:  true
-  start_cmp:  60
+  start_cmp:  50
   ckpt_freq:  1000
-  print_freq: 100
+  print_freq: 200
 
 
 ...
