@@ -29,4 +29,6 @@ def psnr_and_ssim():
     print("The average psnr is " + str(average_psnr))
     print("The average ssim is " + str(average_ssim))
 
-psnr_and_ssim()
+if __name__ == '__main__':
+
+    psnr_and_ssim()

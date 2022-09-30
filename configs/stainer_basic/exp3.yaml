@@ -6,7 +6,7 @@ seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 4
+  train_batch: 8
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -32,12 +32,13 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_channels: 3
     init_channels:  32
-    num_layers:     4
+    num_layers:     3
     norm_type:      batch
+    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
@@ -69,12 +70,12 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 2
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
   ckpt_freq:  1000
-  print_freq: 200
+  print_freq: 100
 
 
 ...

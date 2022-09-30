@@ -34,12 +34,13 @@ G:
     init_gain: 0.02
 
 D:
-  name: patch_gan
+  name: ms_gan
   params:
     input_channels: 3
     init_channels:  32
     num_layers:     3
     norm_type:      batch
+    num_depths:     2
   init:
     init_type: normal
     init_gain: 0.02
