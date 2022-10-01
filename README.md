@@ -61,16 +61,6 @@ python evaluate.py                \
 
 ## 5. Metrics
 
-<style>
-td {
-  text-align: center;
-  vertical-align: middle;
-}
-th {
-  text-align: center;
-  vertical-align: middle;
-}
-</style>
 <table>
     <thead>
         <tr>
@@ -200,7 +190,7 @@ th {
             <td>o</td>
             <td>23.3942</td>
             <td>0.5833</td>
-            <td>best in metrics<br>droplet artifacts and blur</td>
+            <td>best in metrics,<br>droplet artifacts and blur</td>
         </tr>
         <tr>
             <td rowspan="2">7</td>
@@ -219,7 +209,7 @@ th {
             <td>o</td>
             <td>22.9293</td>
             <td>0.5585</td>
-            <td>best in visual<br>shadow artifacts</td>
+            <td>best in visual,<br>shadow artifacts</td>
         </tr>
         <tr>
             <td rowspan="2">8</td>
@@ -238,7 +228,7 @@ th {
             <td>o</td>
             <td>22.9809</td>
             <td>0.5697</td>
-            <td>in metrics: 6 < 8 < 7<br>in visula: 7 < 8 < 6 </td>
+            <td>in metrics: 6 < 8 < 7,<br>in visula: 7 < 8 < 6 </td>
         </tr>
     </tbody>
 </table>
