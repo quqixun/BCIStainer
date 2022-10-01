@@ -1,13 +1,14 @@
-numpy
-scipy
-imageio
-omegaconf
-matplotlib
-tqdm
-albumentations
-scikit-image
-opencv-python
-pandas
-piqa
-lpips
-git+https://github.com/lucidrains/ema-pytorch.git
+numpy                  == 1.23.0
+scipy                  == 1.8.1
+imageio                == 2.19.3
+omegaconf              == 2.2.2
+matplotlib             == 3.5.2
+tqdm                   == 4.64.0
+albumentations         == 1.2.0
+scikit-image           == 0.18.3
+opencv-python          == 4.6.0.66
+opencv-python-headless == 4.6.0.66
+pandas                 == 1.4.3
+piqa                   == 1.2.2
+lpips                  == 0.1.4
+ema-pytorch            == 0.0.10
