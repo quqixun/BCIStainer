@@ -25,6 +25,7 @@ G:
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
+    attention:       false
   init:
     init_type: normal
     init_gain: 0.02

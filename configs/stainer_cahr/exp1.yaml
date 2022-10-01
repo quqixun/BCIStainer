@@ -1,14 +1,14 @@
 ---
 
 
-exp:  stainer_cahr_cmp/exp3
+exp:  stainer_cahr/exp1
 seed: 42
 
 loader:
   crop_size:   512
   random_crop: false
   norm_method: global_minmax
-  train_batch: 4
+  train_batch: 6
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -30,7 +30,7 @@ G:
     dropout:         0.2
     output_lowres:   true
     mask_dec_input:  dec1
-    attention:       true
+    attention:       false
   init:
     init_type: normal
     init_gain: 0.02
@@ -43,20 +43,6 @@ D:
     num_layers:     3
     norm_type:      batch
     num_depths:     2
-  init:
-    init_type: normal
-    init_gain: 0.02
-
-C:
-  name: comparator_basic
-  params:
-    full_size:      1024
-    input_channels: 3
-    init_channels:  32
-    max_channels:   256
-    levels:         4
-    norm_type:      batch
-    dropout:        0.2
   init:
     init_type: normal
     init_gain: 0.02
@@ -74,9 +60,6 @@ loss:
   gan:
     mode:   lsgan
     weight: 1.0
-  cmp:
-    mode:   csim
-    weight: 1.0
 
 optimizer:
   name: AdamW
@@ -91,16 +74,14 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 2
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
   crop_loss:  true
   infer_mode: infer_crop
-  apply_cmp:  true
-  start_cmp:  50
   ckpt_freq:  1000
-  print_freq: 200
+  print_freq: 100
 
 
 ...

@@ -8,7 +8,7 @@ loader:
   crop_size:   512
   random_crop: false
   norm_method: global_minmax
-  train_batch: 4
+  train_batch: 6
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -30,6 +30,7 @@ G:
     dropout:         0.2
     output_lowres:   true
     mask_dec_input:  dec1
+    attention:       false
   init:
     init_type: normal
     init_gain: 0.02
@@ -90,7 +91,7 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 2
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
@@ -99,7 +100,7 @@ trainer:
   apply_cmp:  true
   start_cmp:  50
   ckpt_freq:  1000
-  print_freq: 200
+  print_freq: 100
 
 
 ...

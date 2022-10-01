@@ -3,15 +3,16 @@
 
 # settings
 device=3
-trainer=basic
+trainer=cahr  # basic, cahr
 evaluator=$trainer
 model_name=model_best_psnr
 apply_tta_list=(false true)
 
 # configurations of experiments
 config_file_list=(
-    ./configs/stainer_basic_cmp/exp3.yaml
-    ./configs/stainer_basic_cmp/exp4.yaml
+    # ./configs/stainer_basic_cmp/exp3.yaml  # basic
+    # ./configs/stainer_basic_cmp/exp4.yaml  # basic
+    ./configs/stainer_cahr_cmp/exp2.yaml  # cahr
 )
 
 for config_file in ${config_file_list[@]}; do

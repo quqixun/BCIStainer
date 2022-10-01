@@ -1,14 +1,14 @@
 ---
 
 
-exp:  stainer_cahr_cmp/exp4
+exp:  stainer_cahr/exp2
 seed: 42
 
 loader:
   crop_size:   512
   random_crop: false
   norm_method: global_minmax
-  train_batch: 4
+  train_batch: 6
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -23,7 +23,8 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      ada
+    style_type:      mod
+    style_linear:    true
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
@@ -46,20 +47,6 @@ D:
     init_type: normal
     init_gain: 0.02
 
-C:
-  name: comparator_basic
-  params:
-    full_size:      1024
-    input_channels: 3
-    init_channels:  32
-    max_channels:   256
-    levels:         4
-    norm_type:      batch
-    dropout:        0.2
-  init:
-    init_type: normal
-    init_gain: 0.02
-
 loss:
   cls:
     mode:   focal
@@ -72,9 +59,6 @@ loss:
     weight: 1.0
   gan:
     mode:   lsgan
-    weight: 1.0
-  cmp:
-    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -90,16 +74,14 @@ scheduler:
 
 trainer:
   epochs:     150
-  accum_iter: 2
+  accum_iter: 1
   diffaug:    false
   ema:        true
   low_weight: 1.0
   crop_loss:  true
   infer_mode: infer_crop
-  apply_cmp:  true
-  start_cmp:  50
   ckpt_freq:  1000
-  print_freq: 200
+  print_freq: 100
 
 
 ...
