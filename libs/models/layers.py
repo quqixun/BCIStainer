@@ -229,23 +229,23 @@ class ResnetModBlock(nn.Module):
         else:
             assert style_dims == conv_dims
 
-        conv1 = []
-        conv1.append(
-            ModConv2d(
-                conv_dims, conv_dims, kernel_size=3,
-                demodulate=True, use_bias=use_bias
-            )
-        )
-        conv1.append(nn.LeakyReLU(0.2, True))
-        self.conv1 = nn.Sequential(*conv1)
-
-        # self.conv1 = nn.Sequential(
+        # conv1 = []
+        # conv1.append(
         #     ModConv2d(
         #         conv_dims, conv_dims, kernel_size=3,
         #         demodulate=True, use_bias=use_bias
-        #     ),
-        #     nn.LeakyReLU(0.2, True)
+        #     )
         # )
+        # conv1.append(nn.LeakyReLU(0.2, True))
+        # self.conv1 = nn.Sequential(*conv1)
+
+        self.conv1 = nn.Sequential(
+            ModConv2d(
+                conv_dims, conv_dims, kernel_size=3,
+                demodulate=True, use_bias=use_bias
+            ),
+            nn.LeakyReLU(0.2, True)
+        )
 
         self.conv2 = nn.Sequential(
             ModConv2d(

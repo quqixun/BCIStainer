@@ -218,7 +218,7 @@ class BCIStainerCAHR(nn.Module):
                     in_dims=in_dims, out_dims=out_dims,
                     conv_type='conv2d', kernel_size=3, stride=2,
                     padding=1, bias=use_bias, norm_layer=norm_layer,
-                    sampling='none', attention=attention
+                    sampling='none', attention=False
                 )
             )
         self.encoder1 = nn.Sequential(*encoder1)
@@ -234,7 +234,7 @@ class BCIStainerCAHR(nn.Module):
                     in_dims=style_dims, out_dims=style_dims,
                     conv_type='conv2d', kernel_size=3, stride=2,
                     padding=1, bias=use_bias, norm_layer=norm_layer,
-                    sampling='none', attention=attention
+                    sampling='none', attention=False
                 )
             )
         encoder2.append(nn.AdaptiveAvgPool2d(1))
@@ -297,7 +297,7 @@ class BCIStainerCAHR(nn.Module):
                     conv_type='convTranspose2d',
                     kernel_size=3, stride=2, padding=1,
                     bias=use_bias, norm_layer=norm_layer,
-                    sampling='none', attention=attention
+                    sampling='none', attention=False
                 )
             )
         self.decoder2 = nn.Sequential(*decoder2)
