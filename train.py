@@ -31,7 +31,7 @@ def main(args):
         val_loader   = get_dataloader('val',   args.val_dir,   configs.loader)
 
         # initialize trainer
-        trainer = BCIBasicTrainer(configs, exp_dir, args.resume_ckpt)
+        trainer = BCITrainerBasic(configs, exp_dir, args.resume_ckpt)
 
     elif args.trainer == 'cahr':
         # loads dataloder for training and validation
@@ -39,7 +39,7 @@ def main(args):
         val_loader   = get_cahr_dataloader('val',   args.val_dir,   configs.loader)
 
         # initialize trainer
-        trainer = BCICAHRTrainer(configs, exp_dir, args.resume_ckpt)
+        trainer = BCITrainerCAHR(configs, exp_dir, args.resume_ckpt)
 
     # training model
     trainer.forward(train_loader, val_loader)

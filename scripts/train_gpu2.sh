@@ -1,20 +1,26 @@
 #!/bin/bash
 
 
-trainer=basic
+# settings
+device=2
+trainer=basic  # basic, cahr
+evaluator=$trainer
+model_name=model_best_psnr
+apply_tta_list=(false true)
+
+# configurations of experiments
 config_file_list=(
-    # ./configs/style_translator/exp4.yaml
-    # ./configs/style_translator/exp5.yaml
-    # ./configs/style_translator/exp6.yaml
-    # ./configs/style_translator_cmp/exp1.yaml
-    # ./configs/style_translator_cmp/exp2.yaml
-    # ./configs/style_translator_cmp/exp3.yaml
-    # ./configs/style_translator_cmp/exp4.yaml
+    # ./configs/stainer_basic_cmp/exp1.yaml   # basic
+    # ./configs/stainer_basic_cmp/exp2.yaml   # basic
+    # ./configs/stainer_cahr_cmp/exp1.yaml    # cahr
+    ./configs/stainer_basic_cmp/exp7.yaml   # basic
+    ./configs/stainer_basic_cmp/exp11.yaml  # basic
 )
 
 for config_file in ${config_file_list[@]}; do
 
-    CUDA_VISIBLE_DEVICES=2          \
+    # training
+    CUDA_VISIBLE_DEVICES=$device    \
     python train.py                 \
         --train_dir   ./data/train  \
         --val_dir     ./data/val    \
@@ -22,37 +28,19 @@ for config_file in ${config_file_list[@]}; do
         --config_file $config_file  \
         --trainer     $trainer
 
-done
+    # evaluation
+    for apply_tta in ${apply_tta_list[@]}; do
 
+        CUDA_VISIBLE_DEVICES=$device      \
+        python evaluate.py                \
+            --data_dir    ./data/test     \
+            --exp_root    ./experiments   \
+            --output_root ./evaluations   \
+            --config_file $config_file    \
+            --model_name  $model_name     \
+            --apply_tta   $apply_tta      \
+            --evaluator   $evaluator
 
-trainer=cahr
-config_file_list=(
-    # ./configs/style_translator_cahr/exp6.yaml
-    # ./configs/style_translator_cahr/exp9.yaml
-    # ./configs/style_translator_cahr/exp13.yaml
-    # ./configs/style_translator_cahr/exp14.yaml
-    # ./configs/style_translator_cahr_cmp/exp1.yaml
-    # ./configs/style_translator_cahr_cmp/exp2.yaml
-    # ./configs/style_translator_cahr_cmp/exp3.yaml
-    # ./configs/style_translator_cahr_cmp/exp4.yaml
-    # ./configs/style_translator_cahr_cmp/exp5.yaml
-    # ./configs/style_translator_cahr_cmp/exp6.yaml
-    # ./configs/style_translator_cahr_cmp/exp7.yaml
-    # ./configs/style_translator_cahr_cmp/exp8.yaml
-    ./configs/style_translator_cahr/exp15.yaml
-    ./configs/style_translator_cahr/exp16.yaml
-    ./configs/style_translator_cahr_cmp/exp11.yaml
-    ./configs/style_translator_cahr_cmp/exp12.yaml
-)
-
-for config_file in ${config_file_list[@]}; do
-
-    CUDA_VISIBLE_DEVICES=2          \
-    python train.py                 \
-        --train_dir   ./data/train  \
-        --val_dir     ./data/val    \
-        --exp_root    ./experiments \
-        --config_file $config_file  \
-        --trainer     $trainer
+    done
 
 done

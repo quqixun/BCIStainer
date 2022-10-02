@@ -11,21 +11,19 @@ if __name__ == '__main__':
 
     he_dir = './data/test/HE'
     ihc_dir = './data/test/IHC'
-
-    # exp = 
     exps = [
-        'style_translator_cahr/exp13',
-        'style_translator_cmp/exp2',
-        'style_translator_cmp/exp4',
-        'style_translator/exp6',
-        'style_translator/exp6_1',
-        'style_translator/exp4',
-        'style_translator/exp4_1',
-        'style_translator_cahr/exp9',
-        'style_translator_cahr/exp9_1',
-        'style_translator_cahr/exp14',
-        'style_translator_cahr/exp6',
-        'style_translator_cahr_cmp/exp4'
+        # 'stainer_basic/exp1',
+        # 'stainer_basic/exp2',
+        # 'stainer_basic/exp3',
+        # 'stainer_basic/exp4',
+        'stainer_basic_cmp/exp1',
+        'stainer_basic_cmp/exp2',
+        'stainer_basic_cmp/exp3',
+        'stainer_basic_cmp/exp4',
+        'stainer_cahr/exp1',
+        'stainer_cahr/exp2',
+        'stainer_cahr_cmp/exp1',
+        'stainer_cahr_cmp/exp2',
     ]
     ihc_pred_dir_base = './evaluations/{}/model_best_psnr_tta/IHC_pred'
 
@@ -39,7 +37,7 @@ if __name__ == '__main__':
         he = iio.imread(opj(he_dir, file))
         ihc = iio.imread(opj(ihc_dir, file))
 
-        plt.figure(figsize=(num_cols * 4, num_rows * 4))
+        plt.figure(figsize=(num_cols * 5, num_rows * 5))
         plt.subplot(num_rows, num_cols, 1)
         plt.title('HE')
         plt.imshow(he)

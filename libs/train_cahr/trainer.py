@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from ..utils import *
 
 
-class BCICAHRTrainer(BCIBaseTrainer):
+class BCITrainerCAHR(BCIBaseTrainer):
 
     def __init__(self, configs, exp_dir, resume_ckpt):
-        super(BCICAHRTrainer, self).__init__(configs, exp_dir, resume_ckpt)
+        super(BCITrainerCAHR, self).__init__(configs, exp_dir, resume_ckpt)
         self.crop_loss  = self.configs.trainer.crop_loss
         self.infer_mode = self.configs.trainer.infer_mode
 
@@ -96,6 +96,8 @@ class BCICAHRTrainer(BCIBaseTrainer):
                 ihc_plevel, ihc_platent = self.C(ihc)
                 lossC = self.ccl_loss(ihc_plevel, level)
                 logger.update(Cc=lossC.item())
+
+                # lossC /= self.accum_iter
                 lossC.backward()
                 if (iter_step + 1) % self.accum_iter == 0:
                     self.C_opt.step()
@@ -109,6 +111,8 @@ class BCICAHRTrainer(BCIBaseTrainer):
                 Dreal += Dreal_crop
             logger.update(Df=Dfake.item(), Dr=Dreal.item())
             lossD = (Dfake + Dreal) * 0.5
+
+            # lossD /= self.accum_iter
             lossD.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
@@ -117,7 +121,8 @@ class BCICAHRTrainer(BCIBaseTrainer):
             self._set_requires_grad(self.D, False)
             Ggan, Grec, Gsim = self._G_loss(he, ihc, ihc_phr, ihc_plr)
             if self.crop_loss:
-                Ggan_crop, Grec_crop, Gsim_crop = self._G_loss(he_crop, ihc_crop, ihc_pcrop)
+                Ggan_crop, Grec_crop, Gsim_crop = \
+                    self._G_loss(he_crop, ihc_crop, ihc_pcrop)
                 Ggan += Ggan_crop
                 Grec += Grec_crop
                 Gsim += Gsim_crop
@@ -133,6 +138,7 @@ class BCICAHRTrainer(BCIBaseTrainer):
                 logger.update(Gm=Gcmp.item())
                 lossG += Gcmp
 
+            # lossG /= self.accum_iter
             lossG.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()
