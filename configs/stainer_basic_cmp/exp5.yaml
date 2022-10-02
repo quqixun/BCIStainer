@@ -1,7 +1,7 @@
 ---
 
 
-exp:  stainer_basic/exp4
+exp:  stainer_basic_cmp/exp5
 seed: 42
 
 loader:
@@ -20,12 +20,13 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      ada
+    style_type:      mod
+    style_linear:    true
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
     output_lowres:   true
-    attention:       true
+    attention:       false
   init:
     init_type: normal
     init_gain: 0.02
@@ -42,6 +43,17 @@ D:
     init_type: normal
     init_gain: 0.02
 
+C:
+  name: mobilenetv2
+  params:
+    levels:     4
+    width_mult: 1.0
+    norm_type:  batch
+    dropout:    0.2
+  init:
+    init_type: normal
+    init_gain: 0.02
+
 loss:
   cls:
     mode:   focal
@@ -54,6 +66,9 @@ loss:
     weight: 1.0
   gan:
     mode:   lsgan
+    weight: 1.0
+  cmp:
+    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -73,6 +88,8 @@ trainer:
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  apply_cmp:  true
+  start_cmp:  50
   ckpt_freq:  1000
   print_freq: 100
 

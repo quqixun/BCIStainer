@@ -1,7 +1,7 @@
 ---
 
 
-exp:  stainer_basic/exp4
+exp:  stainer_basic_cmp/exp12
 seed: 42
 
 loader:
@@ -42,6 +42,15 @@ D:
     init_type: normal
     init_gain: 0.02
 
+C:
+  name: shufflenetv2
+  params:
+    levels:     4
+    width_mult: 1.0
+  init:
+    init_type: normal
+    init_gain: 0.02
+
 loss:
   cls:
     mode:   focal
@@ -54,6 +63,9 @@ loss:
     weight: 1.0
   gan:
     mode:   lsgan
+    weight: 1.0
+  cmp:
+    mode:   csim
     weight: 1.0
 
 optimizer:
@@ -73,6 +85,8 @@ trainer:
   diffaug:    false
   ema:        true
   low_weight: 1.0
+  apply_cmp:  true
+  start_cmp:  50
   ckpt_freq:  1000
   print_freq: 100
 
