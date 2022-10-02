@@ -66,10 +66,9 @@ python evaluate.py                \
         <tr>
             <th>No.</th>
             <th>Configs</th>
-            <th>Model</th>
+            <th>Stainer</th>
             <th>Style</th>
             <th>Attention</th>
-            <th>Stainer</th>
             <th>Comparator</th>
             <th>TTA</th>
             <th>PSNR</th>
@@ -80,11 +79,10 @@ python evaluate.py                \
     <tbody>
         <tr>
             <td rowspan="2">1</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp1.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic</td>
-            <td rowspan="2">demod</td>
-            <td rowspan="2">x</td>
+            <td rowspan="2"><a href="./configs/stainer_basic/exp1.yaml">stainer_basic/exp1</a></td>
             <td rowspan="2">basic</td>
+            <td rowspan="2">mod</td>
+            <td rowspan="2">x</td>
             <td rowspan="2">x</td>
             <td>x</td>
             <td>22.2289</td>
@@ -99,11 +97,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">2</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp2.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic</td>
+            <td rowspan="2"><a href="./configs/stainer_basic/exp2.yaml">stainer_basic/exp2</a></td>
+            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">x</td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">x</td>
             <td>x</td>
             <td>22.7732</td>
@@ -118,11 +115,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">3</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp3.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic</td>
-            <td rowspan="2">demod</td>
-            <td rowspan="2">o</td>
+            <td rowspan="2"><a href="./configs/stainer_basic/exp3.yaml">stainer_basic/exp3</a></td>
             <td rowspan="2">basic</td>
+            <td rowspan="2">mod</td>
+            <td rowspan="2">o</td>
             <td rowspan="2">x</td>
             <td>x</td>
             <td>22.5492</td>
@@ -137,11 +133,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">4</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp4.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic</td>
+            <td rowspan="2"><a href="./configs/stainer_basic/exp4.yaml">stainer_basic/exp4</a></td>
+            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">o</td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">x</td>
             <td>x</td>
             <td>22.5447</td>
@@ -156,11 +151,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">5</td>
-            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp1.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic_cmp</td>
-            <td rowspan="2">demod</td>
-            <td rowspan="2">x</td>
+            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp1.yaml">stainer_basic_cmp/exp1</a></td>
             <td rowspan="2">basic</td>
+            <td rowspan="2">mod</td>
+            <td rowspan="2">x</td>
             <td rowspan="2">basic</td>
             <td>x</td>
             <td>22.3711</td>
@@ -175,11 +169,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">6</td>
-            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp2.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic_cmp</td>
+            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp2.yaml">stainer_basic_cmp/exp2</a></td>
+            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">x</td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">basic</td>
             <td>x</td>
             <td>22.8123</td>
@@ -194,11 +187,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">7</td>
-            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp3.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic_cmp</td>
-            <td rowspan="2">demod</td>
-            <td rowspan="2">o</td>
+            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp3.yaml">stainer_basic_cmp/exp3</a></td>
             <td rowspan="2">basic</td>
+            <td rowspan="2">mod</td>
+            <td rowspan="2">o</td>
             <td rowspan="2">basic</td>
             <td>x</td>
             <td>22.5357</td>
@@ -213,11 +205,10 @@ python evaluate.py                \
         </tr>
         <tr>
             <td rowspan="2">8</td>
-            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp4.yaml">configs</a></td>
-            <td rowspan="2">stainer_basic_cmp</td>
+            <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp4.yaml">stainer_basic_cmp/exp4</a></td>
+            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">o</td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">basic</td>
             <td>x</td>
             <td>22.5447</td>
