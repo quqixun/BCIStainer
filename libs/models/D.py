@@ -8,9 +8,9 @@ from .layers import *
 
 def define_D(configs):
 
-    if configs.name == 'patch_gan':
+    if configs.name == 'patch':
         net = NLayerDiscriminator(**configs.params)
-    elif configs.name == 'ms_gan':
+    elif configs.name == 'multiscale':
         net = MultiscaleDiscriminator(**configs.params)
     else:
         raise NotImplementedError(f'unknown D model name {configs.name}')

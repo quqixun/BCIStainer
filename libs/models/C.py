@@ -9,11 +9,11 @@ from torchvision.models.shufflenetv2 import ShuffleNetV2
 
 def define_C(configs):
 
-    if configs.name == 'comparator_basic':
+    if configs.name == 'basic':
         net = ComparatorBasic(**configs.params)
-    elif configs.name == 'comparator_mobilenetv2':
+    elif configs.name == 'mobilenetv2':
         net = ComparatorMobileNetV2(**configs.params)
-    elif configs.name == 'comparator_shufflenetv2':
+    elif configs.name == 'shufflenetv2':
         net = ComparatorShuffleNetV2(**configs.params)
     else:
         raise NotImplementedError(f'unknown C model name {configs.name}')

@@ -7,9 +7,9 @@ from copy import deepcopy
 
 def define_G(configs):
 
-    if configs.name == 'stainer_basic':
+    if configs.name == 'basic':
         net = BCIStainerBasic(**configs.params)
-    elif configs.name == 'stainer_cahr':
+    elif configs.name == 'cahr':
         net = BCIStainerCAHR(**configs.params)
     else:
         raise NotImplementedError(f'unknown G model name {configs.name}')
