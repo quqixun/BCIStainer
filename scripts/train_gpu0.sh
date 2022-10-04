@@ -13,8 +13,10 @@ config_file_list=(
     # ./configs/stainer_basic/exp1.yaml      # basic
     # ./configs/stainer_basic/exp2.yaml      # basic
     # ./configs/stainer_cahr/exp1.yaml       # cahr
-    ./configs/stainer_basic_cmp/exp5.yaml  # basic
-    ./configs/stainer_basic_cmp/exp9.yaml  # basic
+    # ./configs/stainer_basic_cmp/exp5.yaml  # basic
+    # ./configs/stainer_basic_cmp/exp9.yaml  # basic
+    ./configs/stainer_basic_cmp/exp13.yaml  # basic
+    ./configs/stainer_basic_cmp/exp14.yaml  # basic
 )
 
 for config_file in ${config_file_list[@]}; do

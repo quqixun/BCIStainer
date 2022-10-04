@@ -181,6 +181,5 @@ class ComparatorResNet50(nn.Module):
     def forward(self, x):
         latent = self.encoder(x)
         latent = torch.flatten(latent, 1)
-        print(latent.size())
         levels = self.classify_head(latent)
         return levels, latent
