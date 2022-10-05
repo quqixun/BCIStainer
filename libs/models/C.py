@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from .utils import *
 from .layers import *
+from torchvision.models import resnet50
 from torchvision.models.mobilenetv2 import MobileNetV2
 from torchvision.models.shufflenetv2 import ShuffleNetV2
 
@@ -15,6 +16,8 @@ def define_C(configs):
         net = ComparatorMobileNetV2(**configs.params)
     elif configs.name == 'shufflenetv2':
         net = ComparatorShuffleNetV2(**configs.params)
+    elif configs.name == 'resnet50':
+        net = ComparatorResNet50(**configs.params)
     else:
         raise NotImplementedError(f'unknown C model name {configs.name}')
 
@@ -147,5 +150,36 @@ class ComparatorShuffleNetV2(nn.Module):
     def forward(self, x):
         latent = self.encoder(x)
         latent = latent.mean([2, 3])  # globalpool
+        levels = self.classify_head(latent)
+        return levels, latent
+
+
+class ComparatorResNet50(nn.Module):
+
+    def __init__(self, levels=4, norm_type='batch'):
+        super(ComparatorResNet50, self).__init__()
+
+        assert norm_type in ['batch', 'instance', 'none']
+        norm_layer = get_norm_layer(norm_type=norm_type)
+
+        model = resnet50(num_classes=levels, norm_layer=norm_layer)
+
+        self.encoder = nn.Sequential(
+            model.conv1,
+            model.bn1,
+            model.relu,
+            model.maxpool,
+            model.layer1,
+            model.layer2,
+            model.layer3,
+            model.layer4,
+            model.avgpool
+        )
+
+        self.classify_head = model.fc
+
+    def forward(self, x):
+        latent = self.encoder(x)
+        latent = torch.flatten(latent, 1)
         levels = self.classify_head(latent)
         return levels, latent

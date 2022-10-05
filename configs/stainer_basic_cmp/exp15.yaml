@@ -1,7 +1,7 @@
 ---
 
 
-exp:  stainer_basic_cmp/exp8
+exp:  stainer_basic_cmp/exp15
 seed: 42
 
 loader:
@@ -20,7 +20,8 @@ G:
     init_channels:   32
     levels:          4
     encoder1_blocks: 3
-    style_type:      ada
+    style_type:      mod
+    style_linear:    true
     style_blocks:    9
     norm_type:       batch
     dropout:         0.2
@@ -43,12 +44,10 @@ D:
     init_gain: 0.02
 
 C:
-  name: mobilenetv2
+  name: resnet50
   params:
-    levels:     4
-    width_mult: 1.0
-    norm_type:  batch
-    dropout:    0.2
+    levels:    4
+    norm_type: batch
   init:
     init_type: normal
     init_gain: 0.02

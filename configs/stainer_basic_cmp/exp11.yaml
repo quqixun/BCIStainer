@@ -6,7 +6,7 @@ seed: 42
 
 loader:
   norm_method: global_minmax
-  train_batch: 8
+  train_batch: 4
   val_batch:   1
   num_workers: 10
   pin_memory:  true
@@ -89,7 +89,7 @@ trainer:
   apply_cmp:  true
   start_cmp:  50
   ckpt_freq:  1000
-  print_freq: 100
+  print_freq: 200
 
 
 ...
