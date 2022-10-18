@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name',  type=str, help='name of model')
     parser.add_argument('--evaluator',   type=str, help='evaluator type, basic or cahr', default='basic')
     parser.add_argument('--apply_tta',   type=lambda x: (str(x).lower() == 'true'),
-                        help='if apply land use low-resolution features', default=False)
+                        help='if apply test-time augmentation', default=False)
 
     args = parser.parse_args()
 
