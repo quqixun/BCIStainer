@@ -6,7 +6,7 @@ BCIStainer tries to translate hematoxylin and eosin (HE) stained slices to immun
 
 ## 1. Workflow
 
-<img src="/home/quqixun/Projects/BCI-Challenge-dev/assets/workflow_1662x3930.jpg" width=800 />
+<img src="./assets/workflow_1662x3930.jpg" width=800 />
 
 ## 2. Environment
 
