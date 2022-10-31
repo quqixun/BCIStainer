@@ -1,6 +1,8 @@
-# BCI-Challenge
+# BCIStainer
 
-Challenge page: https://bci.grand-challenge.org/
+A solution for Challenge: [Breast Cancer Immunohistochemical Image Generation Challenge](https://bci.grand-challenge.org/)
+
+BCIStainer tries to translate hematoxylin and eosin (HE) stained slices to immunohistochemical techniques (IHC) stained slices.
 
 ## 1. Workflow
 
