@@ -126,7 +126,7 @@ class BCIEvaluatorBasic(object):
 
             ihe_pred_untta = untta(ihc_pred, i)
             ihc_pred_tta += ihe_pred_untta
-        
+
         ihc_pred_tta /= 7
         ihc_pred_tta = ihc_pred_tta.astype(np.uint8)
         iio.imwrite(ihc_pred_path, ihc_pred_tta)
