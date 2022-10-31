@@ -95,7 +95,7 @@ class BCITrainerBasic(BCIBaseTrainer):
                 lossC = self.ccl_loss(ihc_plevel, level)
                 logger.update(Cc=lossC.item())
 
-                # lossC /= self.accum_iter
+                lossC /= self.accum_iter
                 lossC.backward()
                 if (iter_step + 1) % self.accum_iter == 0:
                     self.C_opt.step()
@@ -106,7 +106,7 @@ class BCITrainerBasic(BCIBaseTrainer):
             logger.update(Df=Dfake.item(), Dr=Dreal.item())
             lossD = (Dfake + Dreal) * 0.5
 
-            # lossD /= self.accum_iter
+            lossD /= self.accum_iter
             lossD.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.D_opt.step()
@@ -126,7 +126,7 @@ class BCITrainerBasic(BCIBaseTrainer):
                 logger.update(Gm=Gcmp.item())
                 lossG += Gcmp
 
-            # lossG /= self.accum_iter
+            lossG /= self.accum_iter
             lossG.backward()
             if (iter_step + 1) % self.accum_iter == 0:
                 self.G_opt.step()

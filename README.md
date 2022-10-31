@@ -2,9 +2,14 @@
 
 Challenge page: https://bci.grand-challenge.org/
 
-## 1. Environment
+## 1. Workflow
+
+<img src="/home/quqixun/Projects/BCI-Challenge-dev/assets/workflow_1662x3930.jpg" width=800 />
+
+## 2. Environment
 
 ```bash
+# using conda
 conda create --name bci python=3.8
 conda activate bci
 
@@ -15,9 +20,9 @@ pip install torch==1.12.0+cu113 torchvision==0.13.0+cu113 -f https://download.py
 pip install -r requirements.txt
 ```
 
-## 2. Dataset
+## 3. Dataset
 
-Download dataset from [here](https://bupt-ai-cz.github.io/BCI_for_GrandChallenge/) and put it in [data](./data) directory.
+Download dataset from [BCI page](https://bupt-ai-cz.github.io/BCI/) and put it in [data](./data) directory as folowing file structure:
 
 ```
 ./data
@@ -35,7 +40,9 @@ Download dataset from [here](https://bupt-ai-cz.github.io/BCI_for_GrandChallenge
     └── README.txt
 ```
 
-## 3. Training and Evaluation
+## 4. Training and Evaluation
+
+Train model using [train.sh](./scripts/train.sh):
 
 ```bash
 # training
@@ -44,31 +51,43 @@ python train.py                 \
     --train_dir   ./data/train  \
     --val_dir     ./data/val    \
     --exp_root    ./experiments \
-    --config_file $config_file  \
-    --trainer     basic  # basic or cahr according to configs
+    --config_file ./configs/stainer_basic_cmp/exp3.yaml \
+    --trainer     basic
+```
 
+Logs, and models are saved in [experiments/stainer_basic_cmp/exp3](./experiments/stainer_basic_cmp/exp3).
+
+Download pretrained model and put it into above directory:
+
+- Google Drive: TBD
+- BaiduYun: https://pan.baidu.com/s/1QxZ2zB0CHZKyttXqpS9iDw  Code: mjmk
+
+Predict stained slices and calculate metrics using [evaluate.sh](./scripts/evaluate.sh):
+
+```bash
 # evaluation
 CUDA_VISIBLE_DEVICES=0            \
 python evaluate.py                \
     --data_dir    ./data/test     \
     --exp_root    ./experiments   \
     --output_root ./evaluations   \
-    --config_file $config_file    \
+    --config_file ./configs/stainer_basic_cmp/exp3.yaml \
     --model_name  model_best_psnr \
     --apply_tta   true            \
-    --evaluator   basic  # basic or cahr according to configs
+    --evaluator   basic
 ```
+
+Predictions and metrics for each input can be found in [evaluations/stainer_basic_cmp/exp3](./evaluations/stainer_basic_cmp/exp3).
 
 ## 5. Metrics
 
-<table>
+<table style="text-align:center">
     <thead>
         <tr>
-            <th>Exp</th>
+            <th>Submit</th>
             <th>Configs</th>
-            <th>Stainer</th>
             <th>Style</th>
-            <th>Attention</th>
+            <th>SimAM</th>
             <th>Comparator</th>
             <th>TTA</th>
             <th>PSNR</th>
@@ -77,73 +96,8 @@ python evaluate.py                \
     </thead>
     <tbody>
         <tr>
-            <td rowspan="2">1</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp1.yaml">stainer_basic/exp1</a></td>
-            <td rowspan="2">basic</td>
-            <td rowspan="2">mod</td>
-            <td rowspan="2">x</td>
-            <td rowspan="2">x</td>
-            <td>x</td>
-            <td>22.2289</td>
-            <td>0.5294</td>
-        </tr>
-        <tr>
-            <td>o</td>
-            <td>22.6266</td>
-            <td>0.5737</td>
-        </tr>
-        <tr>
-            <td rowspan="2">2</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp2.yaml">stainer_basic/exp2</a></td>
-            <td rowspan="2">basic</td>
-            <td rowspan="2">adain</td>
-            <td rowspan="2">x</td>
-            <td rowspan="2">x</td>
-            <td>x</td>
-            <td>22.7732</td>
-            <td>0.5245</td>
-        </tr>
-        <tr>
-            <td>o</td>
-            <td>23.2413</td>
-            <td>0.5726</td>
-        </tr>
-        <tr>
-            <td rowspan="2">3</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp3.yaml">stainer_basic/exp3</a></td>
-            <td rowspan="2">basic</td>
-            <td rowspan="2">mod</td>
-            <td rowspan="2">o</td>
-            <td rowspan="2">x</td>
-            <td>x</td>
-            <td>22.5492</td>
-            <td>0.5312</td>
-        </tr>
-        <tr>
-            <td>o</td>
-            <td>22.8406</td>
-            <td>0.5646</td>
-        </tr>
-        <tr>
-            <td rowspan="2">4</td>
-            <td rowspan="2"><a href="./configs/stainer_basic/exp4.yaml">stainer_basic/exp4</a></td>
-            <td rowspan="2">basic</td>
-            <td rowspan="2">adain</td>
-            <td rowspan="2">o</td>
-            <td rowspan="2">x</td>
-            <td>x</td>
-            <td>22.5447</td>
-            <td>0.5316</td>
-        </tr>
-        <tr>
-            <td>o</td>
-            <td>22.9690</td>
-            <td>0.5760</td>
-        </tr>
-        <tr>
-            <td rowspan="2">5</td>
+            <td rowspan="2"></td>
             <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp1.yaml">stainer_basic_cmp/exp1</a></td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">mod</td>
             <td rowspan="2">x</td>
             <td rowspan="2">basic</td>
@@ -157,9 +111,8 @@ python evaluate.py                \
             <td>0.5743</td>
         </tr>
         <tr>
-            <td rowspan="2">6</td>
+            <td rowspan="2"></td>
             <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp2.yaml">stainer_basic_cmp/exp2</a></td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">x</td>
             <td rowspan="2">basic</td>
@@ -173,9 +126,8 @@ python evaluate.py                \
             <td>0.5833</td>
         </tr>
         <tr>
-            <td rowspan="2">7</td>
+            <td rowspan="2">&#9989;</td>
             <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp3.yaml">stainer_basic_cmp/exp3</a></td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">mod</td>
             <td rowspan="2">o</td>
             <td rowspan="2">basic</td>
@@ -189,9 +141,8 @@ python evaluate.py                \
             <td>0.5585</td>
         </tr>
         <tr>
-            <td rowspan="2">8</td>
+            <td rowspan="2"></td>
             <td rowspan="2"><a href="./configs/stainer_basic_cmp/exp4.yaml">stainer_basic_cmp/exp4</a></td>
-            <td rowspan="2">basic</td>
             <td rowspan="2">adain</td>
             <td rowspan="2">o</td>
             <td rowspan="2">basic</td>
@@ -204,46 +155,43 @@ python evaluate.py                \
             <td>22.9809</td>
             <td>0.5697</td>
         </tr>
-        <tr>
-            <td rowspan="2">9</td>
-            <td rowspan="2">tbd</td>
-            <td rowspan="2"></td>
-            <td rowspan="2"></td>
-            <td rowspan="2"></td>
-            <td rowspan="2"></td>
-            <td>x</td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>o</td>
-            <td></td>
-            <td></td>
-        </tr>
     </tbody>
 </table>
 
-More experiments are going to be evaluated. These results may not be uploaded before the deadline.
+## 6. Examples
 
-For now, only exp6, exp7 and exp8 were submitted.
+TBD
 
-## 6. Artifacts
+## 7. Artifacts
 
 There are four types of artifacts that are generated by the stainer:
 
 - shadow: in the area without cell, darker region (compared to the area with cells) is generated by the stainer
-- small droplets: appear nearby the dark and small nucleus
+- tiny droplets: appear nearby the dark and small nucleus
 - large droplets: appear randomly in the stained images
 - blur: the stained images are far less sharp than the ground truth
 
-|                            shadow                            |                        small droplets                        |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-|    <img src="./assets/artifacts/shadow.png" width=400 />     | <img src="./assets/artifacts/small_droplets.png" width=400 /> |
-|                      **large droplets**                      |                           **blur**                           |
-| <img src="./assets/artifacts/large_droplets.png" width=400 /> |     <img src="./assets/artifacts/blur.png" width=400 />      |
+|                        shadow                         |                        tiny droplets                         |                        large droplets                        |                        blur                         |
+| :---------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :-------------------------------------------------: |
+| <img src="./assets/artifacts/shadow.png" width=200 /> | <img src="./assets/artifacts/small_droplets.png" width=200 /> | <img src="./assets/artifacts/large_droplets.png" width=200 /> | <img src="./assets/artifacts/blur.png" width=200 /> |
 
-## 7. Submits
+## 8. References
 
-The results of exp6 have shadow and small droplets in several cases. exp7 and exp8 generate images with large droplets and blur artifacts.
+[1] Karras T, Laine S, Aittala M, et al. Analyzing and improving the image quality of stylegan[C]//Proceedings of the IEEE/CVF conference on computer vision and pattern recognition. 2020: 8110-8119.
 
-Although exp6 has the lowest PSNR and SSIM, it shows more details than exp7 and exp8 by visually comparing. Also, the results of exp6 are more consistent with the ground truth than the resutls of exp7 and exp8.
+[2] Yang L, Zhang R Y, Li L, et al. Simam: A simple, parameter-free attention module for convolutional neural networks[C]//International conference on machine learning. PMLR, 2021: 11863-11874.
+
+[3] Lin T Y, Goyal P, Girshick R, et al. Focal loss for dense object detection[C]//Proceedings of the IEEE international conference on computer vision. 2017: 2980-2988.
+
+[4] Zhao H, Gallo O, Frosio I, et al. Loss functions for image restoration with neural networks[J]. IEEE Transactions on computational imaging, 2016, 3(1): 47-57.
+
+[5] Wang T C, Liu M Y, Zhu J Y, et al. High-resolution image synthesis and semantic manipulation with conditional gans[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2018: 8798-8807.
+
+[6] Buslaev A, Iglovikov V I, Khvedchenya E, et al. Albumentations: fast and flexible image augmentations[J]. Information, 2020, 11(2): 125.
+
+[7] Implementation of weight demodulated layer is copied from [lucidrains/stylegan2-pytorch](https://github.com/lucidrains/stylegan2-pytorch).
+
+[8] EMA updator is from the pacakge [lucidrains/ema-pytorch](https://github.com/lucidrains/ema-pytorch).
+
+[9] [francois-rozet/piqa](https://github.com/francois-rozet/piqa) provides implementation of SSIM loss.
+
