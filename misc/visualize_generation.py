@@ -12,18 +12,10 @@ if __name__ == '__main__':
     he_dir = './data/test/HE'
     ihc_dir = './data/test/IHC'
     exps = [
-        # 'stainer_basic/exp1',
-        # 'stainer_basic/exp2',
-        # 'stainer_basic/exp3',
-        # 'stainer_basic/exp4',
         'stainer_basic_cmp/exp1',
         'stainer_basic_cmp/exp2',
         'stainer_basic_cmp/exp3',
         'stainer_basic_cmp/exp4',
-        'stainer_cahr/exp1',
-        'stainer_cahr/exp2',
-        'stainer_cahr_cmp/exp1',
-        'stainer_cahr_cmp/exp2',
     ]
     ihc_pred_dir_base = './evaluations/{}/model_best_psnr_tta/IHC_pred'
 
