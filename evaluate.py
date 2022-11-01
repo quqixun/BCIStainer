@@ -24,7 +24,7 @@ def main(args):
     print(f'- Configs   : {args.config_file}')
     print(f'- Apply TTA : {args.apply_tta}', '\n')
 
-    # initializes trainer
+    # initializes evaluator
     if args.evaluator == 'basic':
         evaluator = BCIEvaluatorBasic(configs, model_path, apply_tta)
     elif args.evaluator == 'cahr':
