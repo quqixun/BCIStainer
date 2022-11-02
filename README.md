@@ -61,7 +61,7 @@ Logs, and models are saved in [experiments/stainer_basic_cmp/exp3](./experiments
 
 Download pretrained model and put it into above directory:
 
-- Google Drive: TBD
+- Google Drive: https://drive.google.com/file/d/1cXWbj4Pp0aI6kAG2U6kJN7_55SXbddSw/view?usp=sharing
 - BaiduYun: https://pan.baidu.com/s/1QxZ2zB0CHZKyttXqpS9iDw  Code: mjmk
 
 Predict stained slices and calculate metrics using [evaluate.sh](./scripts/evaluate.sh):
